@@ -8,6 +8,8 @@ namespace geoflow::nodes::gdal {
   class OGRLoaderNode:public Node {
     int layer_count = 0;
     int layer_id = 0;
+    float base_elevation = 0;
+
     std::string filepath = "";
 
     std::string geometry_type_name;
@@ -24,7 +26,8 @@ namespace geoflow::nodes::gdal {
       add_poly_output("attributes", {typeid(vec1b), typeid(vec1i), typeid(vec1f), typeid(vec1s)});
 
       add_param("filepath", ParamPath(filepath, "File path"));
-      add_param("layer_id", ParamInt(layer_id, "Layer ID"));
+      add_param("base_elevation", ParamFloat(base_elevation, "Base elevation"));
+      // add_param("layer_id", ParamInt(layer_id, "Layer ID"));
 
       GDALAllRegister();
     }

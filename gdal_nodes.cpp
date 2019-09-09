@@ -101,7 +101,7 @@ namespace geoflow::nodes::gdal {
             std::array<float,3> p = {
               float(poPoint.getX()-(*manager.data_offset)[0]), 
               float(poPoint.getY()-(*manager.data_offset)[1]), 
-              float(poPoint.getZ()-(*manager.data_offset)[2])
+              float(poPoint.getZ()-(*manager.data_offset)[2]) + base_elevation
             };
             line_string.push_back(p);
           }
@@ -121,7 +121,7 @@ namespace geoflow::nodes::gdal {
               manager.data_offset = {poPoint.getX(), poPoint.getY(), 0};
               found_offset = true;
             }
-            std::array<float,3> p = {float(poPoint.getX()-(*manager.data_offset)[0]), float(poPoint.getY()-(*manager.data_offset)[1]), float(poPoint.getZ()-(*manager.data_offset)[2])};
+            std::array<float,3> p = {float(poPoint.getX()-(*manager.data_offset)[0]), float(poPoint.getY()-(*manager.data_offset)[1]), float(poPoint.getZ()-(*manager.data_offset)[2]) + base_elevation};
             ring.push_back(p);
           }
           // ring.erase(--ring.end());
