@@ -16,6 +16,9 @@ if (GEOS_FOUND)
   include_directories(${GEOS_INCLUDE_DIR})
 endif()
 
+find_package( Boost )
+include_directories(${Boost_INCLUDE_DIR})
+
 add_library(gfp_gdal MODULE
   gdal_nodes.cpp
   plugin.cpp
@@ -29,5 +32,8 @@ set_target_properties(
   gfp_gdal
   PROPERTIES CXX_STANDARD 17
 )
+if (MSVC)
+  target_compile_options(gfp_gdal PRIVATE "/Zc:__cplusplus")
+endif()
 
 install(TARGETS gfp_gdal DESTINATION ${geoflow_PLUGIN_FOLDER})
