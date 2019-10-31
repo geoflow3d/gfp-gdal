@@ -16,9 +16,6 @@ if (GEOS_FOUND)
   include_directories(${GEOS_INCLUDE_DIR})
 endif()
 
-find_package( Boost )
-include_directories(${Boost_INCLUDE_DIR})
-
 add_library(gfp_gdal MODULE
   gdal_nodes.cpp
   plugin.cpp

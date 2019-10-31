@@ -1,12 +1,6 @@
 #include "gdal_nodes.hpp"
 
-#include <boost/geometry.hpp>
-#include <boost/geometry/geometries/point_xy.hpp>
-#include <boost/geometry/geometries/linestring.hpp>
-#include <boost/geometry/geometries/polygon.hpp>
-namespace bg = boost::geometry;
-typedef bg::model::d2::point_xy<double> point_type;
-typedef bg::model::point<double, 3, bg::cs::cartesian> point_type_3d;
+#include <geos_c.h>
 
 #include <unordered_map>
 #include <variant>
@@ -31,7 +25,7 @@ namespace geoflow::nodes::gdal {
     }
   }
   
-  void OGRLoaderNode::process(){
+  void OGRLoaderNode::process() {
     GDALDatasetUniquePtr poDS(GDALDataset::Open( filepath.c_str(), GDAL_OF_VECTOR));
     if( poDS == nullptr )
     {
@@ -378,4 +372,6 @@ void GEOSMergeLinesNode::process() {
 
     output("lines").set(outputLines);
 }
+
+
 }
