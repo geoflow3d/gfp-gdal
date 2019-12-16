@@ -46,6 +46,7 @@ public:
   void init()
   {
     add_vector_input("geometries", {typeid(LineStringCollection), typeid(LinearRingCollection)});
+
     add_poly_input("attributes", {typeid(vec1b), typeid(vec1i), typeid(vec1f), typeid(vec1s)}, true);
 
     add_param("filepath", ParamPath(filepath, "File path"));
@@ -97,17 +98,21 @@ public:
   }
   void process();
 };
-
-class PolygonUnionNode : public Node
+class GDALDatabaseConnectNode : public Node
 {
 public:
   using Node::Node;
+  std::string DatabaseString;
+  std::string TableName;
   void init()
   {
-    add_vector_input("polygons", typeid(LinearRing));
-    add_vector_output("polygons", typeid(LinearRing));
-    add_vector_output("holes", typeid(LinearRing));
+    add_input("alpha_rings", typeid(LinearRingCollection));
+    add_param("DatabaseString", ParamPath(DatabaseString, "DatabaseString"));
+    add_param("TableName", ParamPath(TableName, "TableName"));
+
+    //add_input("DatabaseString", typeid(std::string));
   }
   void process();
 };
+
 } // namespace geoflow::nodes::gdal

@@ -426,8 +426,68 @@ void GEOSMergeLinesNode::process()
   output("lines").set(outputLines);
 }
 
-void PolygonUnionNode::process()
+void GDALDatabaseConnectNode::process()
 {
-}
+  std::cout << "Database connecting ..." << std::endl;
+  auto alpha_rings = input("alpha_rings").get<LinearRingCollection>();
 
+  std::string drivername = "PostgreSQL";
+
+  //"PG:dbname='ahn3buildings' host='localhost' port='5432' user='postgres' password='1'"
+  //DatabaseString = "PG:dbname='ahn3buildings' host='localhost' port='5432' user='postgres' password='1'";
+  //TableName = "Test31";
+
+  GDALDataset *dataSource;
+
+  if (GDALGetDriverCount() == 0)
+    GDALAllRegister();
+
+  GDALDriver *driver = GetGDALDriverManager()->GetDriverByName(drivername.c_str());
+
+  dataSource = driver->Create(DatabaseString.c_str(), 0, 0, 0, GDT_Unknown, NULL);
+
+  if (dataSource == NULL)
+  {
+    std::cout << "Get nothing!" << std::endl;
+  }
+
+  /*OGRLayer *layer = dataSource->GetLayerByName("geometries");
+        if (layer == NULL) 
+        {
+            std::cout << " fail to get layer" << std::endl;
+        }*/
+
+  std::string str1 = "CREATE TABLE ";
+
+  std::string sql = str1 + TableName + " (id VARCHAR PRIMARY KEY, the_geom geometry(POLYGON, 28992))";
+
+  auto result = dataSource->ExecuteSQL(sql.c_str(), NULL, NULL);
+
+  for (int i = 0; i < alpha_rings.size(); i++)
+  {
+    std::string line = "INSERT INTO " + TableName + " Values (" + std::to_string(i) + "," + "ST_GeomFromText(" + "\'" + "POLYGON((";
+    // each ring
+    for (int j = 0; j < alpha_rings[i].size(); j++)
+    {
+      if (j != alpha_rings[i].size() - 1)
+        line = line + std::to_string(alpha_rings[i][j][0] + (*manager.data_offset)[0]) + ' ' + std::to_string(alpha_rings[i][j][1] + (*manager.data_offset)[1]) + ',';
+      else
+      {
+        //line = line + std::to_string(alpha_rings[i][j][0] + (*manager.data_offset)[0]) + ' '+ std::to_string(alpha_rings[i][j][1] + (*manager.data_offset)[1]);
+        line = line + std::to_string(alpha_rings[i][j][0] + (*manager.data_offset)[0]) + ' ' + std::to_string(alpha_rings[i][j][1] + (*manager.data_offset)[1]) + ',' + std::to_string(alpha_rings[i][0][0] + (*manager.data_offset)[0]) + ' ' + std::to_string(alpha_rings[i][0][1] + (*manager.data_offset)[1]);
+      }
+    }
+    line = line + "))";
+    //std::cout << "line:" << line << std::endl;
+    line = line + "\'" + "," + "28992" + "));";
+    std::cout << line << std::endl;
+
+    auto result = dataSource->ExecuteSQL(line.c_str(), NULL, NULL);
+  }
+
+  //dataSource->CommitTransaction();
+
+  GDALClose(driver);
+  std::cout << "Database disconnected!" << std::endl;
+}
 } // namespace geoflow::nodes::gdal
