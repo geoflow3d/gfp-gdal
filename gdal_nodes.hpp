@@ -107,8 +107,8 @@ public:
   void init()
   {
     add_input("alpha_rings", typeid(LinearRingCollection));
-    add_param("DatabaseString", ParamPath(DatabaseString, "DatabaseString"));
-    add_param("TableName", ParamPath(TableName, "TableName"));
+    add_param("DatabaseString", ParamString(DatabaseString, "DatabaseString"));
+    add_param("TableName", ParamString(TableName, "TableName"));
 
     //add_input("DatabaseString", typeid(std::string));
   }
