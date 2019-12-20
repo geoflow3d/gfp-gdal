@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <variant>
 #include <fstream>
+#include <iomanip>
 
 namespace geoflow::nodes::gdal
 {
