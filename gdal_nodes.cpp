@@ -189,7 +189,7 @@ void OGRLoaderNode::process()
 
 void OGRWriterNode::process()
 {
-  auto geom_term = input("geometries");
+  auto& geom_term = vector_input("geometries");
 
   //    const char *gszDriverName = "ESRI Shapefile";
   const char *gszDriverName = "GPKG";
@@ -218,19 +218,13 @@ void OGRWriterNode::process()
 
   oSRS.importFromEPSG(epsg);
   OGRwkbGeometryType wkbType;
-  std::variant<LineStringCollection, LinearRingCollection> geometry_collection;
-  size_t geom_count;
-  if (geom_term.is_connected_type(typeid(LinearRingCollection)))
+  if (geom_term.is_connected_type(typeid(LinearRing)))
   {
     wkbType = wkbPolygon;
-    geometry_collection = geom_term.get<LinearRingCollection>();
-    geom_count = std::get<LinearRingCollection>(geometry_collection).size();
   }
-  else if (geom_term.is_connected_type(typeid(LineStringCollection)))
+  else if (geom_term.is_connected_type(typeid(LineString)))
   {
     wkbType = wkbLineString25D;
-    geometry_collection = geom_term.get<LineStringCollection>();
-    geom_count = std::get<LineStringCollection>(geometry_collection).size();
   }
   poLayer = poDS->CreateLayer("geom", &oSRS, wkbType, NULL);
   if (poLayer == NULL)
@@ -277,7 +271,7 @@ void OGRWriterNode::process()
     }
   }
 
-  for (size_t i = 0; i != geom_count; ++i)
+  for (size_t i = 0; i != geom_term.size(); ++i)
   {
     OGRFeature *poFeature;
     poFeature = OGRFeature::CreateFeature(poLayer->GetLayerDefn());
@@ -301,24 +295,24 @@ void OGRWriterNode::process()
       }
     }
 
-    if (geom_term.is_connected_type(typeid(LinearRingCollection)))
+    if (geom_term.is_connected_type(typeid(LinearRing)))
     {
       OGRLinearRing ogrring;
-      LinearRingCollection &lr = std::get<LinearRingCollection>(geometry_collection);
-      for (auto const &g : lr[i])
+      const LinearRing& lr = geom_term.get<LinearRing>(i);
+      for (auto& g : lr)
       {
         ogrring.addPoint(g[0] + (*manager.data_offset)[0], g[1] + (*manager.data_offset)[1], g[2] + (*manager.data_offset)[2]);
       }
       ogrring.closeRings();
-      OGRPolygon bouwpoly;
-      bouwpoly.addRing(&ogrring);
-      poFeature->SetGeometry(&bouwpoly);
+      OGRPolygon ogrpoly;
+      ogrpoly.addRing(&ogrring);
+      poFeature->SetGeometry(&ogrpoly);
     }
-    if (geom_term.is_connected_type(typeid(LineStringCollection)))
+    if (geom_term.is_connected_type(typeid(LineString)))
     {
       OGRLineString ogrlinestring;
-      LineStringCollection &ls = std::get<LineStringCollection>(geometry_collection);
-      for (auto const &g : ls[i])
+      const  LineString& ls = geom_term.get<LineString>(i);
+      for (auto& g : ls)
       {
         ogrlinestring.addPoint(g[0] + (*manager.data_offset)[0], g[1] + (*manager.data_offset)[1], g[2] + (*manager.data_offset)[2]);
       }
