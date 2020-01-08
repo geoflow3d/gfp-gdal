@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 project (io-gdal VERSION 0.0.1)
 
-add_definitions(-DGF_PLUGIN_NAME=\"${CMAKE_PROJECT_NAME}\")
-
 find_package(geoflow REQUIRED)
 
 # GDAL
@@ -16,21 +14,16 @@ if (GEOS_FOUND)
   include_directories(${GEOS_INCLUDE_DIR})
 endif()
 
-add_library(gfp_gdal MODULE
-  gdal_nodes.cpp
-  plugin.cpp
-)
+set(GF_PLUGIN_NAME ${PROJECT_NAME})
+set(GF_PLUGIN_TARGET_NAME "gfp_gdal")
+set(GF_PLUGIN_REGISTER ${PROJECT_SOURCE_DIR}/register.hpp)
+geoflow_create_plugin(gdal_nodes.cpp)
+
 target_link_libraries( gfp_gdal
   geoflow-core
   ${GDAL_LIBRARY}
   ${GEOS_LIBRARY}
 )
-set_target_properties(
-  gfp_gdal
-  PROPERTIES CXX_STANDARD 17
-)
 if (MSVC)
   target_compile_options(gfp_gdal PRIVATE "/Zc:__cplusplus")
 endif()
-
-install(TARGETS gfp_gdal DESTINATION ${geoflow_PLUGIN_FOLDER})
