@@ -110,4 +110,20 @@ public:
   }
   void process();
 };
+class GDALDatabaseConnectNode : public Node
+{
+public:
+  using Node::Node;
+  std::string DatabaseString;
+  std::string TableName;
+  void init()
+  {
+    add_input("alpha_rings", typeid(LinearRingCollection));
+    add_param("DatabaseString", ParamString(DatabaseString, "DatabaseString"));
+    add_param("TableName", ParamString(TableName, "TableName"));
+
+    //add_input("DatabaseString", typeid(std::string));
+  }
+  void process();
+};
 } // namespace geoflow::nodes::gdal
