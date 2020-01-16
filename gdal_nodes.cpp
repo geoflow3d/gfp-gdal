@@ -482,6 +482,7 @@ void GDALDatabaseConnectNode::process()
     std::cout << line << std::endl;
 
     auto result = dataSource->ExecuteSQL(line.c_str(), NULL, NULL);
+    std::cout << result << std::endl;
   }
 
   //dataSource->CommitTransaction();
