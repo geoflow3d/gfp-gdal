@@ -193,15 +193,14 @@ void OGRWriterNode::process()
   auto& geom_term = vector_input("geometries");
 
   //    const char *gszDriverName = "ESRI Shapefile";
-  const char *gszDriverName = "GPKG";
   GDALDriver *poDriver;
 
   GDALAllRegister();
 
-  poDriver = GetGDALDriverManager()->GetDriverByName(gszDriverName);
+  poDriver = GetGDALDriverManager()->GetDriverByName(gdaldriver.c_str());
   if (poDriver == NULL)
   {
-    printf("%s driver not available.\n", gszDriverName);
+    printf("%s driver not available.\n", gdaldriver.c_str());
     exit(1);
   }
 

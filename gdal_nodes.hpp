@@ -40,6 +40,7 @@ class OGRWriterNode : public Node
 {
   int epsg = 7415;
   std::string filepath = "out";
+  std::string gdaldriver = "GPKG";
 
 public:
   using Node::Node;
@@ -49,6 +50,8 @@ public:
     add_poly_input("attributes", {typeid(vec1b), typeid(vec1i), typeid(vec1f), typeid(vec1s)}, true);
 
     add_param("filepath", ParamPath(filepath, "File path"));
+    add_param("epsg", ParamInt(epsg, "EPSG"));
+    add_param("gdaldriver", ParamString(gdaldriver, "GDAL driver (format)"));
   }
   void process();
 };
