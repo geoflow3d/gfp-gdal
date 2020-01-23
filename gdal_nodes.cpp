@@ -193,15 +193,14 @@ void OGRWriterNode::process()
   auto& geom_term = vector_input("geometries");
 
   //    const char *gszDriverName = "ESRI Shapefile";
-  const char *gszDriverName = "GPKG";
   GDALDriver *poDriver;
 
   GDALAllRegister();
 
-  poDriver = GetGDALDriverManager()->GetDriverByName(gszDriverName);
+  poDriver = GetGDALDriverManager()->GetDriverByName(gdaldriver.c_str());
   if (poDriver == NULL)
   {
-    printf("%s driver not available.\n", gszDriverName);
+    printf("%s driver not available.\n", gdaldriver.c_str());
     exit(1);
   }
 
@@ -227,7 +226,7 @@ void OGRWriterNode::process()
   {
     wkbType = wkbLineString25D;
   }
-  poLayer = poDS->CreateLayer("geom", &oSRS, wkbType, NULL);
+  poLayer = poDS->CreateLayer(layername.c_str(), &oSRS, wkbType, NULL);
   if (poLayer == NULL)
   {
     printf("Layer creation failed.\n");
