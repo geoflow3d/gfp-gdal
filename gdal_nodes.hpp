@@ -41,6 +41,7 @@ class OGRWriterNode : public Node
   int epsg = 7415;
   std::string filepath = "out";
   std::string gdaldriver = "GPKG";
+  std::string layername = "geom";
 
 public:
   using Node::Node;
@@ -52,6 +53,7 @@ public:
     add_param("filepath", ParamPath(filepath, "File path"));
     add_param("epsg", ParamInt(epsg, "EPSG"));
     add_param("gdaldriver", ParamString(gdaldriver, "GDAL driver (format)"));
+    add_param("layername", ParamString(layername, "Layer name"));
   }
   void process();
 };

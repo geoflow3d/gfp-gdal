@@ -226,7 +226,7 @@ void OGRWriterNode::process()
   {
     wkbType = wkbLineString25D;
   }
-  poLayer = poDS->CreateLayer("geom", &oSRS, wkbType, NULL);
+  poLayer = poDS->CreateLayer(layername.c_str(), &oSRS, wkbType, NULL);
   if (poLayer == NULL)
   {
     printf("Layer creation failed.\n");
