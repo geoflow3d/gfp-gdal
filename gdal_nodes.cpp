@@ -124,7 +124,7 @@ void OGRLoaderNode::process()
       {
         OGRPolygon *poPolygon = poGeometry->toPolygon();
 
-        LinearRing ring;
+        LinearRing gf_polygon;
         // for(auto& poPoint : poPolygon->getExteriorRing()) {
         OGRPoint poPoint;
         for (size_t i = 0; i < poPolygon->getExteriorRing()->getNumPoints() - 1; ++i)
@@ -136,7 +136,20 @@ void OGRLoaderNode::process()
             found_offset = true;
           }
           std::array<float, 3> p = {float(poPoint.getX() - (*manager.data_offset)[0]), float(poPoint.getY() - (*manager.data_offset)[1]), float(poPoint.getZ() - (*manager.data_offset)[2]) + base_elevation};
-          ring.push_back(p);
+          gf_polygon.push_back(p);
+        }
+        // also read the interior rings (holes)
+        for (size_t i = 0; i < poPolygon->getNumInteriorRings(); ++i) 
+        {
+          auto ogr_iring = poPolygon->getInteriorRing(i);
+          vec3f gf_iring;
+          for (size_t j = 0; j < ogr_iring->getNumPoints() - 1; ++j)
+          {
+            ogr_iring->getPoint(j, &poPoint);
+            std::array<float, 3> p = {float(poPoint.getX() - (*manager.data_offset)[0]), float(poPoint.getY() - (*manager.data_offset)[1]), float(poPoint.getZ() - (*manager.data_offset)[2]) + base_elevation};
+            gf_iring.push_back(p);
+          }
+          gf_polygon.interior_rings().push_back(gf_iring);
         }
         // ring.erase(--ring.end());
         // bg::model::polygon<point_type_3d> boost_poly;
@@ -148,7 +161,7 @@ void OGRLoaderNode::process()
         // for (auto& p : boost_poly.outer()) {
         //   ring_dedup.push_back({float(bg::get<0>(p)), float(bg::get<1>(p)), float(bg::get<2>(p))}); //FIXME losing potential z...
         // }
-        linear_rings.push_back(ring);
+        linear_rings.push_back(gf_polygon);
 
         push_attributes(*poFeature);
       }
@@ -300,6 +313,7 @@ void OGRWriterNode::process()
     {
       OGRLinearRing ogrring;
       const LinearRing& lr = geom_term.get<LinearRing>(i);
+      // set exterior ring
       for (auto& g : lr)
       {
         ogrring.addPoint(g[0] + (*manager.data_offset)[0], g[1] + (*manager.data_offset)[1], g[2] + (*manager.data_offset)[2]);
@@ -307,6 +321,18 @@ void OGRWriterNode::process()
       ogrring.closeRings();
       OGRPolygon ogrpoly;
       ogrpoly.addRing(&ogrring);
+
+      // set interior rings
+      for (auto& iring : lr.interior_rings())
+      {
+        OGRLinearRing ogr_iring;
+        for (auto& g : iring)
+        {
+          ogr_iring.addPoint(g[0] + (*manager.data_offset)[0], g[1] + (*manager.data_offset)[1], g[2] + (*manager.data_offset)[2]);
+        }
+        ogr_iring.closeRings();
+        ogrpoly.addRing(&ogr_iring);
+      }
       poFeature->SetGeometry(&ogrpoly);
     }
     if (geom_term.is_connected_type(typeid(LineString)))
