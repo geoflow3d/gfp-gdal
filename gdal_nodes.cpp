@@ -36,7 +36,7 @@ void OGRLoaderNode::push_attributes(OGRFeature &poFeature)
 
 void OGRLoaderNode::process()
 {
-  GDALDatasetUniquePtr poDS(GDALDataset::Open(filepath.c_str(), GDAL_OF_VECTOR));
+  GDALDatasetUniquePtr poDS(GDALDataset::Open(manager.substitute_globals(filepath).c_str(), GDAL_OF_VECTOR));
   if (poDS == nullptr)
   {
     std::cerr << "Open failed.\n";
@@ -219,7 +219,7 @@ void OGRWriterNode::process()
 
   GDALDataset *poDS;
 
-  poDS = poDriver->Create(filepath.c_str(), 0, 0, 0, GDT_Unknown, NULL);
+  poDS = poDriver->Create(manager.substitute_globals(filepath).c_str(), 0, 0, 0, GDT_Unknown, NULL);
   if (poDS == NULL)
   {
     printf("Creation of output file failed.\n");
@@ -359,7 +359,7 @@ void CSVLoaderNode::process()
 {
   PointCollection points;
 
-  std::ifstream f_in(filepath);
+  std::ifstream f_in(manager.substitute_globals(filepath));
   float px, py, pz;
   size_t i = 0;
   std::string header;
@@ -381,7 +381,7 @@ void CSVWriterNode::process()
   auto points = input("points").get<PointCollection>();
   auto distances = input("distances").get<vec1f>();
 
-  std::ofstream f_out(filepath);
+  std::ofstream f_out(manager.substitute_globals(filepath));
   f_out << std::fixed << std::setprecision(2);
   f_out << "x y z distance\n";
   for (size_t i = 0; i < points.size(); ++i)
