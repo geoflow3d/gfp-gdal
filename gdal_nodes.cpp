@@ -6,6 +6,7 @@
 #include <variant>
 #include <fstream>
 #include <iomanip>
+#include <sstream>
 
 namespace geoflow::nodes::gdal
 {
@@ -206,77 +207,101 @@ void OGRWriterNode::process()
   auto& geom_term = vector_input("geometries");
 
   //    const char *gszDriverName = "ESRI Shapefile";
-  GDALDriver *poDriver;
+  GDALDriver* poDriver;
 
   GDALAllRegister();
 
   poDriver = GetGDALDriverManager()->GetDriverByName(gdaldriver.c_str());
-  if (poDriver == NULL)
-  {
+  if (poDriver == nullptr) {
     printf("%s driver not available.\n", gdaldriver.c_str());
     exit(1);
   }
 
-  GDALDataset *poDS;
+  GDALDataset* poDS;
 
-  poDS = poDriver->Create(manager.substitute_globals(filepath).c_str(), 0, 0, 0, GDT_Unknown, NULL);
-  if (poDS == NULL)
-  {
+  // TODO: The driver and layer creation options (papszOptions) seem to have no
+  //  effect at all. I'm not sure what to do
+
+  // For parsing GDAL KEY=VALUE options, see the CSL* functions in https://gdal.org/api/cpl.html#cpl-string-h
+
+  // Driver creation options. For now there is only one option possible.
+  //  char** papszOptions = (char**)CPLCalloc(sizeof(char*), 2);
+  char** papszOptions = nullptr;
+  if (append) {
+    papszOptions =
+      CSLSetNameValue(papszOptions, "APPEND_SUBDATASET", "YES");
+  } else {
+    papszOptions =
+      CSLSetNameValue(papszOptions, "APPEND_SUBDATASET", "NO");
+  }
+  std::string bla("APPEND_SUBDATASET=YES");
+  CPLParseNameValue(bla.c_str(), nullptr);
+  std::cout << std::endl  << "APPEND_SUBDATASET=" << CSLFetchNameValue(papszOptions, "APPEND_SUBDATASET") << std::endl;
+  // Create the driver
+  poDS = poDriver->Create(
+    manager.substitute_globals(filepath).c_str(), 0, 0, 0, GDT_Unknown, papszOptions);
+  if (poDS == nullptr) {
     printf("Creation of output file failed.\n");
     exit(1);
   }
+  CSLDestroy(papszOptions);
 
   OGRSpatialReference oSRS;
-  OGRLayer *poLayer;
+  OGRLayer*           poLayer;
 
   oSRS.importFromEPSG(epsg);
   OGRwkbGeometryType wkbType;
-  if (geom_term.is_connected_type(typeid(LinearRing)))
-  {
+  if (geom_term.is_connected_type(typeid(LinearRing))) {
     wkbType = wkbPolygon;
-  }
-  else if (geom_term.is_connected_type(typeid(LineString)))
-  {
+  } else if (geom_term.is_connected_type(typeid(LineString))) {
     wkbType = wkbLineString25D;
   }
-  poLayer = poDS->CreateLayer(layername.c_str(), &oSRS, wkbType, NULL);
-  if (poLayer == NULL)
-  {
+
+//  // Parse Layer Creation Options
+//  std::vector<std::string> lco_vec;
+//  std::stringstream        s_stream(lco);
+//  while (s_stream.good()) {
+//    std::string substr;
+//    getline(s_stream, substr, ',');
+//    lco_vec.push_back(substr);
+//  }
+//  char** papszOptionsLayer = nullptr;
+//  papszOptionsLayer =
+//    CSLSetNameValue(papszOptionsLayer, "APPEND_SUBDATASET", "YES");
+//  for (auto & i : lco_vec) {
+////    papszOptionsLayer[i] = const_cast<char*>(lco_vec[i].c_str());
+//  }
+
+  // Frickin CreateLayer takes a char** for the lco. Whats a char** anyways!?
+  poLayer =
+    poDS->CreateLayer(layername.c_str(), &oSRS, wkbType, nullptr);
+  if (poLayer == nullptr) {
     printf("Layer creation failed.\n");
     exit(1);
   }
 
   std::unordered_map<std::string, size_t> attr_id_map;
   int fcnt = poLayer->GetLayerDefn()->GetFieldCount();
-  for (auto &term : poly_input("attributes").basic_terminals())
-  {
+  for (auto& term : poly_input("attributes").basic_terminals()) {
     //      std::cout << "group_term " << name << "\n";
     auto name = term->get_name();
-    if (term->accepts_type(typeid(vec1f)))
-    {
+    if (term->accepts_type(typeid(vec1f))) {
       OGRFieldDefn oField(name.c_str(), OFTReal);
-      if (poLayer->CreateField(&oField) != OGRERR_NONE)
-      {
+      if (poLayer->CreateField(&oField) != OGRERR_NONE) {
         printf("Creating Name field failed.\n");
         exit(1);
       }
       attr_id_map[name] = fcnt++;
-    }
-    else if (term->accepts_type(typeid(vec1i)))
-    {
+    } else if (term->accepts_type(typeid(vec1i))) {
       OGRFieldDefn oField(name.c_str(), OFTInteger64);
-      if (poLayer->CreateField(&oField) != OGRERR_NONE)
-      {
+      if (poLayer->CreateField(&oField) != OGRERR_NONE) {
         printf("Creating Name field failed.\n");
         exit(1);
       }
       attr_id_map[name] = fcnt++;
-    }
-    else if (term->accepts_type(typeid(vec1s)))
-    {
+    } else if (term->accepts_type(typeid(vec1s))) {
       OGRFieldDefn oField(name.c_str(), OFTString);
-      if (poLayer->CreateField(&oField) != OGRERR_NONE)
-      {
+      if (poLayer->CreateField(&oField) != OGRERR_NONE) {
         printf("Creating Name field failed.\n");
         exit(1);
       }
@@ -284,38 +309,31 @@ void OGRWriterNode::process()
     }
   }
 
-  for (size_t i = 0; i != geom_term.size(); ++i)
-  {
-    OGRFeature *poFeature;
+  for (size_t i = 0; i != geom_term.size(); ++i) {
+    OGRFeature* poFeature;
     poFeature = OGRFeature::CreateFeature(poLayer->GetLayerDefn());
-    for (auto &term : poly_input("attributes").basic_terminals())
-    {
+    for (auto& term : poly_input("attributes").basic_terminals()) {
       auto tname = term->get_name();
-      if (term->accepts_type(typeid(vec1f)))
-      {
-        auto &val = term->get<const vec1f &>();
+      if (term->accepts_type(typeid(vec1f))) {
+        auto& val = term->get<const vec1f&>();
         poFeature->SetField(attr_id_map[tname], val[i]);
-      }
-      else if (term->accepts_type(typeid(vec1i)))
-      {
-        auto &val = term->get<const vec1i &>();
+      } else if (term->accepts_type(typeid(vec1i))) {
+        auto& val = term->get<const vec1i&>();
         poFeature->SetField(attr_id_map[tname], val[i]);
-      }
-      else if (term->accepts_type(typeid(vec1s)))
-      {
-        auto &val = term->get<const vec1s &>();
+      } else if (term->accepts_type(typeid(vec1s))) {
+        auto& val = term->get<const vec1s&>();
         poFeature->SetField(attr_id_map[tname], val[i].c_str());
       }
     }
 
-    if (geom_term.is_connected_type(typeid(LinearRing)))
-    {
-      OGRLinearRing ogrring;
+    if (geom_term.is_connected_type(typeid(LinearRing))) {
+      OGRLinearRing     ogrring;
       const LinearRing& lr = geom_term.get<LinearRing>(i);
       // set exterior ring
-      for (auto& g : lr)
-      {
-        ogrring.addPoint(g[0] + (*manager.data_offset)[0], g[1] + (*manager.data_offset)[1], g[2] + (*manager.data_offset)[2]);
+      for (auto& g : lr) {
+        ogrring.addPoint(g[0] + (*manager.data_offset)[0],
+                         g[1] + (*manager.data_offset)[1],
+                         g[2] + (*manager.data_offset)[2]);
       }
       ogrring.closeRings();
       OGRPolygon ogrpoly;
@@ -334,19 +352,18 @@ void OGRWriterNode::process()
       }
       poFeature->SetGeometry(&ogrpoly);
     }
-    if (geom_term.is_connected_type(typeid(LineString)))
-    {
-      OGRLineString ogrlinestring;
-      const  LineString& ls = geom_term.get<LineString>(i);
-      for (auto& g : ls)
-      {
-        ogrlinestring.addPoint(g[0] + (*manager.data_offset)[0], g[1] + (*manager.data_offset)[1], g[2] + (*manager.data_offset)[2]);
+    if (geom_term.is_connected_type(typeid(LineString))) {
+      OGRLineString     ogrlinestring;
+      const LineString& ls = geom_term.get<LineString>(i);
+      for (auto& g : ls) {
+        ogrlinestring.addPoint(g[0] + (*manager.data_offset)[0],
+                               g[1] + (*manager.data_offset)[1],
+                               g[2] + (*manager.data_offset)[2]);
       }
       poFeature->SetGeometry(&ogrlinestring);
     }
 
-    if (poLayer->CreateFeature(poFeature) != OGRERR_NONE)
-    {
+    if (poLayer->CreateFeature(poFeature) != OGRERR_NONE) {
       printf("Failed to create feature in geopackage.\n");
       exit(1);
     }

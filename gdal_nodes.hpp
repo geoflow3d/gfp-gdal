@@ -42,6 +42,8 @@ class OGRWriterNode : public Node
   std::string filepath = "out";
   std::string gdaldriver = "GPKG";
   std::string layername = "geom";
+  std::string lco = "";
+  bool append = false;
 
 public:
   using Node::Node;
@@ -54,6 +56,8 @@ public:
     add_param("epsg", ParamInt(epsg, "EPSG"));
     add_param("gdaldriver", ParamString(gdaldriver, "GDAL driver (format)"));
     add_param("layername", ParamString(layername, "Layer name"));
+    add_param("lco", ParamString(lco, "Layer creation options (comma separated)"));
+    add_param("append", ParamBool(append, "Append to the data set?"));
   }
   void process();
 };
