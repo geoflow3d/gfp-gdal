@@ -262,7 +262,7 @@ void OGRWriterNode::process()
   } else if (geom_term.is_connected_type(typeid(LineString))) {
     wkbType = wkbLineString25D;
   } else if (geom_term.is_connected_type(typeid(TriangleCollection))) {
-    wkbType = wkbMultiSurfaceZ;
+    wkbType = wkbMultiPolygon25D;
   }
 
   //  // Parse Layer Creation Options
@@ -375,10 +375,10 @@ void OGRWriterNode::process()
     }
     // Note BD: only tried this with Postgis
     if (geom_term.is_connected_type(typeid(TriangleCollection))) {
-      OGRMultiSurface ogrmultisrf;
+      OGRMultiPolygon ogrmultipoly = OGRMultiPolygon();
       for (auto& triangle : geom_term.get<TriangleCollection>(i)) {
-        OGRPolygon    ogrpoly;
-        OGRLinearRing ring;
+        OGRPolygon    ogrpoly = OGRPolygon();
+        OGRLinearRing ring    = OGRLinearRing();
         for (auto& vertex : triangle) {
           ring.addPoint(vertex[0] + (*manager.data_offset)[0],
                         vertex[1] + (*manager.data_offset)[1],
@@ -386,11 +386,11 @@ void OGRWriterNode::process()
         }
         ring.closeRings();
         ogrpoly.addRing(&ring);
-        if (ogrmultisrf.addGeometry(&ogrpoly) != OGRERR_NONE) {
+        if (ogrmultipoly.addGeometry(&ogrpoly) != OGRERR_NONE) {
           printf("couldn't add triangle to MultiSurfaceZ");
         }
       }
-      poFeature->SetGeometry(&ogrmultisrf);
+      poFeature->SetGeometry(&ogrmultipoly);
     }
 
     if (poLayer->CreateFeature(poFeature) != OGRERR_NONE) {
