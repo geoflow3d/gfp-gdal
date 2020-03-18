@@ -255,6 +255,8 @@ void OGRWriterNode::process()
     wkbType = wkbPolygon;
   } else if (geom_term.is_connected_type(typeid(LineString))) {
     wkbType = wkbLineString25D;
+  } else if (geom_term.is_connected_type(typeid(TriangleCollection))) {
+    wkbType = wkbPolyhedralSurfaceZ;
   }
 
 //  // Parse Layer Creation Options
@@ -309,6 +311,8 @@ void OGRWriterNode::process()
     }
   }
 
+  int l = geom_term.size();
+  std::cout << "input geometries length " << l << std::endl;
   for (size_t i = 0; i != geom_term.size(); ++i) {
     OGRFeature* poFeature;
     poFeature = OGRFeature::CreateFeature(poLayer->GetLayerDefn());
@@ -361,6 +365,29 @@ void OGRWriterNode::process()
                                g[2] + (*manager.data_offset)[2]);
       }
       poFeature->SetGeometry(&ogrlinestring);
+    }
+    if (geom_term.is_connected_type(typeid(TriangleCollection))) {
+      OGRPolyhedralSurface ogrpolyhsrf;
+      for (auto &triangle : geom_term.get<TriangleCollection>(i))
+      {
+        OGRPolygon ogrpoly;
+        OGRLinearRing ring;
+        for (auto &vertex : triangle)
+        {
+          ring.addPoint(vertex[0] + (*manager.data_offset)[0],
+                        vertex[1] + (*manager.data_offset)[1],
+                        vertex[2] + (*manager.data_offset)[2]);
+        }
+        ring.closeRings();
+        ogrpoly.addRing(&ring);
+        if (ogrpolyhsrf.addGeometryDirectly(&ogrpoly) != OGRERR_NONE) {
+          printf("couldn't add triangle to polyhedralsurface");
+        }
+      }
+      int numgeom = ogrpolyhsrf.getNumGeometries();
+      int polyvalid = ogrpolyhsrf.IsValid();
+      std::cout << &"num tri in polyhsrf " [ numgeom] << std::endl;
+      poFeature->SetGeometry(&ogrpolyhsrf);
     }
 
     if (poLayer->CreateFeature(poFeature) != OGRERR_NONE) {
