@@ -222,24 +222,30 @@ void OGRWriterNode::process()
   // TODO: The driver and layer creation options (papszOptions) seem to have no
   //  effect at all. I'm not sure what to do
 
-  // For parsing GDAL KEY=VALUE options, see the CSL* functions in https://gdal.org/api/cpl.html#cpl-string-h
+  // For parsing GDAL KEY=VALUE options, see the CSL* functions in
+  // https://gdal.org/api/cpl.html#cpl-string-h
 
   // Driver creation options. For now there is only one option possible.
   //  char** papszOptions = (char**)CPLCalloc(sizeof(char*), 2);
   char** papszOptions = nullptr;
   if (append) {
-    papszOptions =
-      CSLSetNameValue(papszOptions, "APPEND_SUBDATASET", "YES");
+    papszOptions = CSLSetNameValue(papszOptions, "APPEND_SUBDATASET", "YES");
   } else {
-    papszOptions =
-      CSLSetNameValue(papszOptions, "APPEND_SUBDATASET", "NO");
+    papszOptions = CSLSetNameValue(papszOptions, "APPEND_SUBDATASET", "NO");
   }
   std::string bla("APPEND_SUBDATASET=YES");
   CPLParseNameValue(bla.c_str(), nullptr);
-  std::cout << std::endl  << "APPEND_SUBDATASET=" << CSLFetchNameValue(papszOptions, "APPEND_SUBDATASET") << std::endl;
+  std::cout << std::endl
+            << "APPEND_SUBDATASET="
+            << CSLFetchNameValue(papszOptions, "APPEND_SUBDATASET")
+            << std::endl;
   // Create the driver
-  poDS = poDriver->Create(
-    manager.substitute_globals(filepath).c_str(), 0, 0, 0, GDT_Unknown, papszOptions);
+  poDS = poDriver->Create(manager.substitute_globals(filepath).c_str(),
+                          0,
+                          0,
+                          0,
+                          GDT_Unknown,
+                          papszOptions);
   if (poDS == nullptr) {
     printf("Creation of output file failed.\n");
     exit(1);
@@ -256,36 +262,35 @@ void OGRWriterNode::process()
   } else if (geom_term.is_connected_type(typeid(LineString))) {
     wkbType = wkbLineString25D;
   } else if (geom_term.is_connected_type(typeid(TriangleCollection))) {
-    wkbType = wkbPolyhedralSurfaceZ;
+    wkbType = wkbMultiSurfaceZ;
   }
 
-//  // Parse Layer Creation Options
-//  std::vector<std::string> lco_vec;
-//  std::stringstream        s_stream(lco);
-//  while (s_stream.good()) {
-//    std::string substr;
-//    getline(s_stream, substr, ',');
-//    lco_vec.push_back(substr);
-//  }
-//  char** papszOptionsLayer = nullptr;
-//  papszOptionsLayer =
-//    CSLSetNameValue(papszOptionsLayer, "APPEND_SUBDATASET", "YES");
-//  for (auto & i : lco_vec) {
-////    papszOptionsLayer[i] = const_cast<char*>(lco_vec[i].c_str());
-//  }
+  //  // Parse Layer Creation Options
+  //  std::vector<std::string> lco_vec;
+  //  std::stringstream        s_stream(lco);
+  //  while (s_stream.good()) {
+  //    std::string substr;
+  //    getline(s_stream, substr, ',');
+  //    lco_vec.push_back(substr);
+  //  }
+  //  char** papszOptionsLayer = nullptr;
+  //  papszOptionsLayer =
+  //    CSLSetNameValue(papszOptionsLayer, "APPEND_SUBDATASET", "YES");
+  //  for (auto & i : lco_vec) {
+  ////    papszOptionsLayer[i] = const_cast<char*>(lco_vec[i].c_str());
+  //  }
 
   // Frickin CreateLayer takes a char** for the lco. Whats a char** anyways!?
-  poLayer =
-    poDS->CreateLayer(layername.c_str(), &oSRS, wkbType, nullptr);
+  poLayer = poDS->CreateLayer(layername.c_str(), &oSRS, wkbType, nullptr);
   if (poLayer == nullptr) {
     printf("Layer creation failed.\n");
     exit(1);
   }
 
+  // Cast the attributes to GDAL feature attributes
   std::unordered_map<std::string, size_t> attr_id_map;
   int fcnt = poLayer->GetLayerDefn()->GetFieldCount();
   for (auto& term : poly_input("attributes").basic_terminals()) {
-    //      std::cout << "group_term " << name << "\n";
     auto name = term->get_name();
     if (term->accepts_type(typeid(vec1f))) {
       OGRFieldDefn oField(name.c_str(), OFTReal);
@@ -311,8 +316,7 @@ void OGRWriterNode::process()
     }
   }
 
-  int l = geom_term.size();
-  std::cout << "input geometries length " << l << std::endl;
+  // Add the attributes to the feature
   for (size_t i = 0; i != geom_term.size(); ++i) {
     OGRFeature* poFeature;
     poFeature = OGRFeature::CreateFeature(poLayer->GetLayerDefn());
@@ -330,6 +334,9 @@ void OGRWriterNode::process()
       }
     }
 
+    // Geometry input type handling for the feature
+    // Cast the incoming geometry to the appropriate GDAL type. Note that this
+    // need to be in line with what is set for wkbType above.
     if (geom_term.is_connected_type(typeid(LinearRing))) {
       OGRLinearRing     ogrring;
       const LinearRing& lr = geom_term.get<LinearRing>(i);
@@ -344,12 +351,12 @@ void OGRWriterNode::process()
       ogrpoly.addRing(&ogrring);
 
       // set interior rings
-      for (auto& iring : lr.interior_rings())
-      {
+      for (auto& iring : lr.interior_rings()) {
         OGRLinearRing ogr_iring;
-        for (auto& g : iring)
-        {
-          ogr_iring.addPoint(g[0] + (*manager.data_offset)[0], g[1] + (*manager.data_offset)[1], g[2] + (*manager.data_offset)[2]);
+        for (auto& g : iring) {
+          ogr_iring.addPoint(g[0] + (*manager.data_offset)[0],
+                             g[1] + (*manager.data_offset)[1],
+                             g[2] + (*manager.data_offset)[2]);
         }
         ogr_iring.closeRings();
         ogrpoly.addRing(&ogr_iring);
@@ -366,28 +373,24 @@ void OGRWriterNode::process()
       }
       poFeature->SetGeometry(&ogrlinestring);
     }
+    // Note BD: only tried this with Postgis
     if (geom_term.is_connected_type(typeid(TriangleCollection))) {
-      OGRPolyhedralSurface ogrpolyhsrf;
-      for (auto &triangle : geom_term.get<TriangleCollection>(i))
-      {
-        OGRPolygon ogrpoly;
+      OGRMultiSurface ogrmultisrf;
+      for (auto& triangle : geom_term.get<TriangleCollection>(i)) {
+        OGRPolygon    ogrpoly;
         OGRLinearRing ring;
-        for (auto &vertex : triangle)
-        {
+        for (auto& vertex : triangle) {
           ring.addPoint(vertex[0] + (*manager.data_offset)[0],
                         vertex[1] + (*manager.data_offset)[1],
                         vertex[2] + (*manager.data_offset)[2]);
         }
         ring.closeRings();
         ogrpoly.addRing(&ring);
-        if (ogrpolyhsrf.addGeometryDirectly(&ogrpoly) != OGRERR_NONE) {
-          printf("couldn't add triangle to polyhedralsurface");
+        if (ogrmultisrf.addGeometry(&ogrpoly) != OGRERR_NONE) {
+          printf("couldn't add triangle to MultiSurfaceZ");
         }
       }
-      int numgeom = ogrpolyhsrf.getNumGeometries();
-      int polyvalid = ogrpolyhsrf.IsValid();
-      std::cout << &"num tri in polyhsrf " [ numgeom] << std::endl;
-      poFeature->SetGeometry(&ogrpolyhsrf);
+      poFeature->SetGeometry(&ogrmultisrf);
     }
 
     if (poLayer->CreateFeature(poFeature) != OGRERR_NONE) {
