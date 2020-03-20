@@ -25,7 +25,7 @@ public:
     add_vector_output("line_strings", typeid(LineString));
     add_vector_output("linear_rings", typeid(LinearRing));
 
-    add_poly_output("attributes", {typeid(vec1b), typeid(vec1i), typeid(vec1f), typeid(vec1s)});
+    add_poly_output("attributes", {typeid(bool), typeid(int), typeid(float), typeid(std::string)});
 
     add_param("filepath", ParamPath(filepath, "File path"));
     add_param("base_elevation", ParamFloat(base_elevation, "Base elevation"));
@@ -50,7 +50,7 @@ public:
   void init()
   {
     add_vector_input("geometries", {typeid(LineString), typeid(LinearRing), typeid(TriangleCollection)});
-    add_poly_input("attributes", {typeid(vec1b), typeid(vec1i), typeid(vec1f), typeid(vec1s)}, true);
+    add_poly_input("attributes", {typeid(bool), typeid(int), typeid(float), typeid(std::string)}, true);
 
     add_param("filepath", ParamPath(filepath, "File path"));
     add_param("epsg", ParamInt(epsg, "EPSG"));

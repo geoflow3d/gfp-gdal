@@ -13,24 +13,19 @@ namespace geoflow::nodes::gdal
 
 void OGRLoaderNode::push_attributes(OGRFeature &poFeature)
 {
-  for (auto &[name, mterm] : poly_output("attributes").get_terminals())
+  for (auto &[name, mterm] : poly_output("attributes").sub_terminals())
   {
-    auto term = (gfBasicMonoOutputTerminal *)(mterm.get());
-    if (term->accepts_type(typeid(vec1i)))
+    if (mterm->accepts_type(typeid(int)))
     {
-      //        std::cout << term->has_data() << "\n";
-      auto &term_data = poly_output("attributes").get_basic<vec1i &>(name);
-      term_data.push_back(poFeature.GetFieldAsInteger64(name.c_str()));
+      mterm->push_back(int(poFeature.GetFieldAsInteger64(name.c_str())));
     }
-    else if (term->accepts_type(typeid(vec1f)))
+    else if (mterm->accepts_type(typeid(float)))
     {
-      auto &term_data = poly_output("attributes").get_basic<vec1f &>(name);
-      term_data.push_back(poFeature.GetFieldAsDouble(name.c_str()));
+      mterm->push_back(float(poFeature.GetFieldAsDouble(name.c_str())));
     }
-    else if (term->accepts_type(typeid(vec1s)))
+    else if (mterm->accepts_type(typeid(std::string)))
     {
-      auto &term_data = poly_output("attributes").get_basic<vec1s &>(name);
-      term_data.push_back((std::string)poFeature.GetFieldAsString(name.c_str()));
+      mterm->push_back((std::string)poFeature.GetFieldAsString(name.c_str()));
     }
   }
 }
@@ -70,18 +65,18 @@ void OGRLoaderNode::process()
     auto field_name = (std::string)field_def->GetNameRef();
     if (t == OFTInteger || t == OFTInteger64)
     {
-      auto &term = poly_output("attributes").add(field_name, typeid(vec1i));
-      term.set(vec1i());
+      auto &term = poly_output("attributes").add_vector(field_name, typeid(int));
+      // term.set(vec1i());
     }
     else if (t == OFTString)
     {
-      auto &term = poly_output("attributes").add(field_name, typeid(vec1s));
-      term.set(vec1s());
+      auto &term = poly_output("attributes").add_vector(field_name, typeid(std::string));
+      // term.set(vec1s());
     }
     else if (t == OFTReal)
     {
-      auto &term = poly_output("attributes").add(field_name, typeid(vec1f));
-      term.set(vec1f());
+      auto &term = poly_output("attributes").add_vector(field_name, typeid(float));
+      // term.set(vec1f());
     }
   }
 
@@ -290,23 +285,23 @@ void OGRWriterNode::process()
   // Cast the attributes to GDAL feature attributes
   std::unordered_map<std::string, size_t> attr_id_map;
   int fcnt = poLayer->GetLayerDefn()->GetFieldCount();
-  for (auto& term : poly_input("attributes").basic_terminals()) {
+  for (auto& term : poly_input("attributes").sub_terminals()) {
     auto name = term->get_name();
-    if (term->accepts_type(typeid(vec1f))) {
+    if (term->accepts_type(typeid(float))) {
       OGRFieldDefn oField(name.c_str(), OFTReal);
       if (poLayer->CreateField(&oField) != OGRERR_NONE) {
         printf("Creating Name field failed.\n");
         exit(1);
       }
       attr_id_map[name] = fcnt++;
-    } else if (term->accepts_type(typeid(vec1i))) {
+    } else if (term->accepts_type(typeid(int))) {
       OGRFieldDefn oField(name.c_str(), OFTInteger64);
       if (poLayer->CreateField(&oField) != OGRERR_NONE) {
         printf("Creating Name field failed.\n");
         exit(1);
       }
       attr_id_map[name] = fcnt++;
-    } else if (term->accepts_type(typeid(vec1s))) {
+    } else if (term->accepts_type(typeid(std::string))) {
       OGRFieldDefn oField(name.c_str(), OFTString);
       if (poLayer->CreateField(&oField) != OGRERR_NONE) {
         printf("Creating Name field failed.\n");
@@ -320,17 +315,17 @@ void OGRWriterNode::process()
   for (size_t i = 0; i != geom_term.size(); ++i) {
     OGRFeature* poFeature;
     poFeature = OGRFeature::CreateFeature(poLayer->GetLayerDefn());
-    for (auto& term : poly_input("attributes").basic_terminals()) {
+    for (auto& term : poly_input("attributes").sub_terminals()) {
       auto tname = term->get_name();
-      if (term->accepts_type(typeid(vec1f))) {
-        auto& val = term->get<const vec1f&>();
-        poFeature->SetField(attr_id_map[tname], val[i]);
-      } else if (term->accepts_type(typeid(vec1i))) {
-        auto& val = term->get<const vec1i&>();
-        poFeature->SetField(attr_id_map[tname], val[i]);
-      } else if (term->accepts_type(typeid(vec1s))) {
-        auto& val = term->get<const vec1s&>();
-        poFeature->SetField(attr_id_map[tname], val[i].c_str());
+      if (term->accepts_type(typeid(float))) {
+        auto& val = term->get<const float&>(i);
+        poFeature->SetField(attr_id_map[tname], val);
+      } else if (term->accepts_type(typeid(int))) {
+        auto& val = term->get<const int&>(i);
+        poFeature->SetField(attr_id_map[tname], val);
+      } else if (term->accepts_type(typeid(std::string))) {
+        auto& val = term->get<const std::string&>(i);
+        poFeature->SetField(attr_id_map[tname], val.c_str());
       }
     }
 
