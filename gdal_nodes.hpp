@@ -50,7 +50,7 @@ public:
   void init()
   {
     add_vector_input("geometries", {typeid(LineString), typeid(LinearRing), typeid(TriangleCollection)});
-    add_poly_input("attributes", {typeid(bool), typeid(int), typeid(float), typeid(std::string)}, true);
+    add_poly_input("attributes", {typeid(bool), typeid(int), typeid(float), typeid(std::string)}, false);
 
     add_param("filepath", ParamPath(filepath, "File path"));
     add_param("epsg", ParamInt(epsg, "EPSG"));
