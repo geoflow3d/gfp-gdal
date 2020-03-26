@@ -204,7 +204,8 @@ void OGRWriterNode::process()
   //    const char *gszDriverName = "ESRI Shapefile";
   GDALDriver* poDriver;
 
-  GDALAllRegister();
+  if (GDALGetDriverCount() == 0)
+    GDALAllRegister();
 
   poDriver = GetGDALDriverManager()->GetDriverByName(gdaldriver.c_str());
   if (poDriver == nullptr) {
@@ -228,8 +229,8 @@ void OGRWriterNode::process()
   } else {
     papszOptions = CSLSetNameValue(papszOptions, "APPEND_SUBDATASET", "NO");
   }
-  std::string bla("APPEND_SUBDATASET=YES");
-  CPLParseNameValue(bla.c_str(), nullptr);
+  // std::string bla("APPEND_SUBDATASET=YES");
+  // CPLParseNameValue(bla.c_str(), nullptr);
   std::cout << std::endl
             << "APPEND_SUBDATASET="
             << CSLFetchNameValue(papszOptions, "APPEND_SUBDATASET")
@@ -245,7 +246,6 @@ void OGRWriterNode::process()
     printf("Creation of output file failed.\n");
     exit(1);
   }
-  CSLDestroy(papszOptions);
 
   OGRSpatialReference oSRS;
   OGRLayer*           poLayer;
@@ -395,6 +395,7 @@ void OGRWriterNode::process()
     OGRFeature::DestroyFeature(poFeature);
   }
   GDALClose(poDS);
+  CSLDestroy(papszOptions);
 }
 
 void CSVLoaderNode::process()

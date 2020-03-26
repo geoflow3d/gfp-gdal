@@ -49,7 +49,7 @@ public:
   using Node::Node;
   void init()
   {
-    add_vector_input("geometries", {typeid(LineString), typeid(LinearRing), typeid(TriangleCollection)});
+    add_vector_input("geometries", {typeid(LineString), typeid(LinearRing), typeid(TriangleCollection), typeid(MultiPolygon)});
     add_poly_input("attributes", {typeid(bool), typeid(int), typeid(float), typeid(std::string)}, false);
 
     add_param("filepath", ParamPath(filepath, "File path"));
