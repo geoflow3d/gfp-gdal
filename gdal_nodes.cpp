@@ -307,7 +307,7 @@ void OGRWriterNode::process()
   //  }
 
   // Frickin CreateLayer takes a char** for the lco. Whats a char** anyways!?
-  poLayer = poDS->CreateLayer(layername.c_str(), &oSRS, wkbType, nullptr);
+  poLayer = poDS->CreateLayer(manager.substitute_globals(layername).c_str(), &oSRS, wkbType, nullptr);
   if (poLayer == nullptr) {
     printf("Layer creation failed.\n");
     exit(1);
