@@ -31,7 +31,8 @@ public:
     add_param("base_elevation", ParamFloat(base_elevation, "Base elevation"));
     // add_param("layer_id", ParamInt(layer_id, "Layer ID"));
 
-    GDALAllRegister();
+    if (GDALGetDriverCount() == 0)
+      GDALAllRegister();
   }
   void process();
 };
@@ -45,11 +46,13 @@ class OGRWriterNode : public Node
   std::string lco = "";
   bool append = false;
 
+  OGRPolygon create_polygon(const LinearRing& lr);
+
 public:
   using Node::Node;
   void init()
   {
-    add_vector_input("geometries", {typeid(LineString), typeid(LinearRing), typeid(TriangleCollection), typeid(MultiPolygon)});
+    add_vector_input("geometries", {typeid(LineString), typeid(LinearRing), typeid(TriangleCollection), typeid(Mesh)});
     add_poly_input("attributes", {typeid(bool), typeid(int), typeid(float), typeid(std::string)}, false);
 
     add_param("filepath", ParamPath(filepath, "File path"));
@@ -58,6 +61,9 @@ public:
     add_param("layername", ParamString(layername, "Layer name"));
     add_param("lco", ParamString(lco, "Layer creation options (comma separated)"));
     add_param("append", ParamBool(append, "Append to the data set?"));
+
+    if (GDALGetDriverCount() == 0)
+      GDALAllRegister();
   }
   void process();
 };

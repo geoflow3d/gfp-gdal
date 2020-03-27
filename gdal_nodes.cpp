@@ -197,15 +197,46 @@ void OGRLoaderNode::process()
   //    }
 }
 
+inline void create_field(OGRLayer* poLayer, std::string& name, OGRFieldType field_type) {
+  OGRFieldDefn oField(name.c_str(), field_type);
+  if (poLayer->CreateField(&oField) != OGRERR_NONE) {
+    printf("Creating field failed.\n");
+    exit(1);
+  }
+}
+
+OGRPolygon OGRWriterNode::create_polygon(const LinearRing& lr) {
+  OGRPolygon ogrpoly;
+  OGRLinearRing ogrring;
+  // set exterior ring
+  for (auto& g : lr) {
+    ogrring.addPoint(g[0] + (*manager.data_offset)[0],
+                      g[1] + (*manager.data_offset)[1],
+                      g[2] + (*manager.data_offset)[2]);
+  }
+  ogrring.closeRings();
+  ogrpoly.addRing(&ogrring);
+
+  // set interior rings
+  for (auto& iring : lr.interior_rings()) {
+    OGRLinearRing ogr_iring;
+    for (auto& g : iring) {
+      ogr_iring.addPoint(g[0] + (*manager.data_offset)[0],
+                          g[1] + (*manager.data_offset)[1],
+                          g[2] + (*manager.data_offset)[2]);
+    }
+    ogr_iring.closeRings();
+    ogrpoly.addRing(&ogr_iring);
+  }
+  return ogrpoly;
+}
+
 void OGRWriterNode::process()
 {
   auto& geom_term = vector_input("geometries");
 
   //    const char *gszDriverName = "ESRI Shapefile";
   GDALDriver* poDriver;
-
-  if (GDALGetDriverCount() == 0)
-    GDALAllRegister();
 
   poDriver = GetGDALDriverManager()->GetDriverByName(gdaldriver.c_str());
   if (poDriver == nullptr) {
@@ -282,31 +313,19 @@ void OGRWriterNode::process()
     exit(1);
   }
 
-  // Cast the attributes to GDAL feature attributes
+  // Create GDAL feature attributes
   std::unordered_map<std::string, size_t> attr_id_map;
   int fcnt = poLayer->GetLayerDefn()->GetFieldCount();
   for (auto& term : poly_input("attributes").sub_terminals()) {
     auto name = term->get_name();
     if (term->accepts_type(typeid(float))) {
-      OGRFieldDefn oField(name.c_str(), OFTReal);
-      if (poLayer->CreateField(&oField) != OGRERR_NONE) {
-        printf("Creating Name field failed.\n");
-        exit(1);
-      }
+      create_field(poLayer, name, OFTReal);
       attr_id_map[name] = fcnt++;
     } else if (term->accepts_type(typeid(int))) {
-      OGRFieldDefn oField(name.c_str(), OFTInteger64);
-      if (poLayer->CreateField(&oField) != OGRERR_NONE) {
-        printf("Creating Name field failed.\n");
-        exit(1);
-      }
+      create_field(poLayer, name, OFTInteger64);
       attr_id_map[name] = fcnt++;
     } else if (term->accepts_type(typeid(std::string))) {
-      OGRFieldDefn oField(name.c_str(), OFTString);
-      if (poLayer->CreateField(&oField) != OGRERR_NONE) {
-        printf("Creating Name field failed.\n");
-        exit(1);
-      }
+      create_field(poLayer, name, OFTString);
       attr_id_map[name] = fcnt++;
     }
   }
@@ -333,29 +352,8 @@ void OGRWriterNode::process()
     // Cast the incoming geometry to the appropriate GDAL type. Note that this
     // need to be in line with what is set for wkbType above.
     if (geom_term.is_connected_type(typeid(LinearRing))) {
-      OGRLinearRing     ogrring;
       const LinearRing& lr = geom_term.get<LinearRing>(i);
-      // set exterior ring
-      for (auto& g : lr) {
-        ogrring.addPoint(g[0] + (*manager.data_offset)[0],
-                         g[1] + (*manager.data_offset)[1],
-                         g[2] + (*manager.data_offset)[2]);
-      }
-      ogrring.closeRings();
-      OGRPolygon ogrpoly;
-      ogrpoly.addRing(&ogrring);
-
-      // set interior rings
-      for (auto& iring : lr.interior_rings()) {
-        OGRLinearRing ogr_iring;
-        for (auto& g : iring) {
-          ogr_iring.addPoint(g[0] + (*manager.data_offset)[0],
-                             g[1] + (*manager.data_offset)[1],
-                             g[2] + (*manager.data_offset)[2]);
-        }
-        ogr_iring.closeRings();
-        ogrpoly.addRing(&ogr_iring);
-      }
+      OGRPolygon ogrpoly = create_polygon(lr);
       poFeature->SetGeometry(&ogrpoly);
     }
     if (geom_term.is_connected_type(typeid(LineString))) {
@@ -383,6 +381,18 @@ void OGRWriterNode::process()
         ogrpoly.addRing(&ring);
         if (ogrmultipoly.addGeometry(&ogrpoly) != OGRERR_NONE) {
           printf("couldn't add triangle to MultiSurfaceZ");
+        }
+      }
+      poFeature->SetGeometry(&ogrmultipoly);
+    }
+
+    if (geom_term.is_connected_type(typeid(Mesh))) {
+      auto& mesh = geom_term.get<Mesh>(i);
+      OGRMultiPolygon ogrmultipoly = OGRMultiPolygon();
+      for (auto& poly : mesh.get_polygons()) {
+        auto ogrpoly = create_polygon(poly);
+        if (ogrmultipoly.addGeometry(&ogrpoly) != OGRERR_NONE) {
+          printf("couldn't add polygon to MultiPolygon");
         }
       }
       poFeature->SetGeometry(&ogrmultipoly);
