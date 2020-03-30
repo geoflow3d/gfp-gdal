@@ -16,6 +16,7 @@ jobs:
       - name: Install GDAL
         run: |
           Invoke-WebRequest http://download.gisinternals.com/sdk/downloads/release-1911-x64-dev.zip -OutFile release-1911-x64-dev.zip
+          mkdir C:\Software\GDAL\
           unzip release-1911-x64-dev.zip -d C:\Software\GDAL\
           $env:GDAL_ROOT=C:\Software\GDAL\release-1911-x64\
           $env:GEOS_LIBRARY_DIR=C:\Software\GDAL\release-1911-x64\lib
