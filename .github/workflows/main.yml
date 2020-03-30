@@ -39,7 +39,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -DCMAKE_INSTALL_PREFIX=C:\Software -DGDAL_INCLUDE_DIR=C:\Software\GDAL\include -DGDAL_LIBRARY=C:\Software\GDAL\lib\gdal_i.lib -DGEOS_INCLUDE_DIR=C:\Software\GEOS\ -DGEOS_LIBRARY=C:\Software\GEOS\geos_c.lib
+          cmake .. -DCMAKE_INSTALL_PREFIX=C:\Software -DGDAL_INCLUDE_DIR=C:\Software\GDAL\include -DGDAL_LIBRARY=C:\Software\GDAL\lib\gdal_i.lib -DGEOS_INCLUDE_DIR=C:\Software\GEOS -DGEOS_LIBRARY=C:\Software\GEOS\geos_c.lib
           cmake --build . --target gfp_gdal --parallel 4 --config Release
       - name: Create artifact
         uses: actions/upload-artifact@master
