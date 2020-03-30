@@ -1,0 +1,34 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - '**.md'
+
+jobs:
+  Windows:
+    name: Build Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install GDAL
+        run: |
+          Invoke-WebRequest http://download.gisinternals.com/sdk/downloads/release-1911-x64-gdal-2-4-4-mapserver-7-4-3/gdal-204-1911-x64-core.msi -OutFile gdal-204-1911-x64-core.msi
+          (Start-Process "msiexec.exe" -ArgumentList "/i gdal-204-1911-x64-core.msi INSTALLDIR=""C:\Software"" ADSK_SETUP_EXE=1 /qb!" -NoNewWindow -Wait -PassThru).ExitCode
+      - name: Install Geoflow
+        run: |
+          Invoke-WebRequest https://github.com/geoflow3d/geoflow/releases/download/v0.1.2/Geoflow-0.1.2-win64.exe -OutFile geoflow-setup.exe
+          .\geoflow-setup.exe /S
+      - name: Build
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows -DCMAKE_INSTALL_PREFIX=C:\Software
+          cmake --build . --target gfp_gdal --parallel 4 --config Release
+      - name: Create artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: gfp_gdal-win64
+          path: build/Release/gfp_gdal.dll
