@@ -19,6 +19,11 @@ jobs:
 #          Invoke-WebRequest http://download.gisinternals.com/sdk/downloads/release-1911-x64-gdal-2-4-4-mapserver-7-4-3-libs.zip -OutFile release-1911-x64-gdal-2-4-4-mapserver-7-4-3-libs.zip
 #          mkdir C:\Software\GDAL\
 #          unzip release-1911-x64-gdal-2-4-4-mapserver-7-4-3-libs.zip -d C:\Software\GDAL
+      - name: Install GDAL
+        run: |
+          echo $env:VCPKG_INSTALLATION_ROOT
+          $env:VCPKG_DEFAULT_TRIPLET="x64-windows"
+          vcpkg install gdal geos
       - name: Install Geoflow
         run: |
           Invoke-WebRequest https://github.com/geoflow3d/geoflow/releases/download/v0.1.2/Geoflow-0.1.2-win64.exe -OutFile geoflow-setup.exe
