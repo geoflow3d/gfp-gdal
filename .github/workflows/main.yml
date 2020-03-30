@@ -19,7 +19,11 @@ jobs:
           mkdir C:\Software\GDAL\
           unzip release-1911-x64-gdal-2-4-4-mapserver-7-4-3-libs.zip -d C:\Software\GDAL
           $env:GDAL_INCLUDE_DIR="C:\Software\GDAL\include"
+          echo $env:GDAL_INCLUDE_DIR
+          $env:GDAL_LIBRARY="C:\Software\GDAL\lib\gdal_i.lib"
+          echo $env:GDAL_LIBRARY
           $env:GEOS_LIBRARY="C:\Software\GDAL\lib\geos_c.lib"
+          echo $env:GEOS_LIBRARY
       - name: Install Geoflow
         run: |
           Invoke-WebRequest https://github.com/geoflow3d/geoflow/releases/download/v0.1.2/Geoflow-0.1.2-win64.exe -OutFile geoflow-setup.exe
