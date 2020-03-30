@@ -16,7 +16,7 @@ jobs:
       - name: Install GDAL & GEOS
         run: |
           Invoke-WebRequest http://download.osgeo.org/osgeo4w/osgeo4w-setup-x86_64.exe -OutFile osgeo4w-setup-x86_64.exe
-          osgeo4w-setup-x86_64.exe -q -k -a x86_64 -D -R C:\Software -s http://download.osgeo.org/osgeo4w/ -P gdal geos
+          osgeo4w-setup-x86_64.exe -q -k -a x86_64 -R C:\Software -s http://download.osgeo.org/osgeo4w/ -P gdal geos
 #      - name: Install GDAL
 #        run: |
 #          echo $env:VCPKG_INSTALLATION_ROOT
