@@ -33,13 +33,14 @@ jobs:
           pathTarget: C:\Software\GEOS
       - name: Install Geoflow
         run: |
+          dir C:\Software\GEOS
           Invoke-WebRequest https://github.com/geoflow3d/geoflow/releases/download/v0.1.2/Geoflow-0.1.2-win64.exe -OutFile geoflow-setup.exe
           .\geoflow-setup.exe /S
       - name: Build
         run: |
           mkdir build
           cd build
-          cmake .. -DCMAKE_INSTALL_PREFIX=C:\Software -DGDAL_INCLUDE_DIR="C:\Software\GDAL\include" -DGDAL_LIBRARY="C:\Software\GDAL\lib\gdal_i.lib" -DGEOS_INCLUDE_DIR="C:\Software\GEOS" -DGEOS_LIBRARY="C:\Software\GEOS\geos_c.lib"
+          cmake .. -DCMAKE_INSTALL_PREFIX=C:\Software -DGDAL_INCLUDE_DIR=C:\Software\GDAL\include -DGDAL_LIBRARY=C:\Software\GDAL\lib\gdal_i.lib -DGEOS_INCLUDE_DIR=C:\Software\GEOS\include -DGEOS_LIBRARY=C:\Software\GEOS\lib\geos_c.lib
           cmake --build . --target gfp_gdal --parallel 4 --config Release
       - name: Create artifact
         uses: actions/upload-artifact@master
