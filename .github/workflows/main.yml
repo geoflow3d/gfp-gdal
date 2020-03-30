@@ -26,7 +26,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows -DCMAKE_INSTALL_PREFIX=C:\Software
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows -DCMAKE_INSTALL_PREFIX=C:\Software -DGEOS_LIBRARY=C:/vcpkg/installed/x64-windows/lib/geos_c.lib
           cmake --build . --target gfp_gdal --parallel 4 --config Release
       - name: Create artifact
         uses: actions/upload-artifact@master
