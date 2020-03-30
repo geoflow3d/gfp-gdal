@@ -13,33 +13,31 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
-# this GDAL has old GEOS and doesn't work
+      - name: Install GDAL & GEOS
+        run: |
+          Invoke-WebRequest http://download.osgeo.org/osgeo4w/osgeo4w-setup-x86_64.exe -OutFile osgeo4w-setup-x86_64.exe
+          osgeo4w-setup-x86_64.exe -q -k -a x86_64 -D -R C:\Software -s http://download.osgeo.org/osgeo4w/ -P gdal geos
 #      - name: Install GDAL
 #        run: |
-#          Invoke-WebRequest http://download.gisinternals.com/sdk/downloads/release-1911-x64-gdal-2-4-4-mapserver-7-4-3-libs.zip -OutFile release-1911-x64-gdal-2-4-4-mapserver-7-4-3-libs.zip
-#          mkdir C:\Software\GDAL\
-#          unzip release-1911-x64-gdal-2-4-4-mapserver-7-4-3-libs.zip -d C:\Software\GDAL
-      - name: Install GDAL
-        run: |
-          echo $env:VCPKG_INSTALLATION_ROOT
-          $env:VCPKG_DEFAULT_TRIPLET="x64-windows"
-          vcpkg install gdal geos
+#          echo $env:VCPKG_INSTALLATION_ROOT
+#          $env:VCPKG_DEFAULT_TRIPLET="x64-windows"
+#          vcpkg install gdal geos
       - name: Install Geoflow
         run: |
           Invoke-WebRequest https://github.com/geoflow3d/geoflow/releases/download/v0.1.2/Geoflow-0.1.2-win64.exe -OutFile geoflow-setup.exe
           .\geoflow-setup.exe /S
-      - name: Build
-        run: |
-          mkdir build
-          cd build
-          cmake .. -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows -DCMAKE_INSTALL_PREFIX=C:\Software -DGEOS_LIBRARY=C:/vcpkg/installed/x64-windows/lib/geos_c.lib
-          cmake --build . --target gfp_gdal --parallel 4 --config Release
 #      - name: Build
 #        run: |
 #          mkdir build
 #          cd build
-#          cmake .. -DCMAKE_INSTALL_PREFIX=C:\Software -DGDAL_INCLUDE_DIR=C:\Software\GDAL\include -DGDAL_LIBRARY=C:\Software\GDAL\lib\gdal_i.lib -DGEOS_LIBRARY=C:\Software\GDAL\lib\geos_c.lib
+#          cmake .. -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows -DCMAKE_INSTALL_PREFIX=C:\Software -DGEOS_LIBRARY=C:/vcpkg/installed/x64-windows/lib/geos_c.lib
 #          cmake --build . --target gfp_gdal --parallel 4 --config Release
+      - name: Build
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_INSTALL_PREFIX=C:\Software -DGDAL_INCLUDE_DIR=C:\Software\include -DGDAL_LIBRARY=C:\Software\lib\gdal_i.lib -DGEOS_LIBRARY=C:\Software\lib\geos_c.lib
+          cmake --build . --target gfp_gdal --parallel 4 --config Release
       - name: Create artifact
         uses: actions/upload-artifact@master
         with:
