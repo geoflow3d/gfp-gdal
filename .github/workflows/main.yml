@@ -13,6 +13,12 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Download GDAL
+        run: |
+          Invoke-WebRequest http://download.gisinternals.com/sdk/downloads/release-1911-x64-gdal-2-4-4-mapserver-7-4-3-libs.zip -OutFile release-1911-x64-gdal-2-4-4-mapserver-7-4-3-libs.zip
+      - uses: brunoborges/justextract@v1
+        with:
+          file: release-1911-x64-gdal-2-4-4-mapserver-7-4-3-libs.zip
       - name: Install GDAL
         run: |
           Invoke-WebRequest http://download.gisinternals.com/sdk/downloads/release-1911-x64-gdal-2-4-4-mapserver-7-4-3-libs.zip -OutFile release-1911-x64-gdal-2-4-4-mapserver-7-4-3-libs.zip
