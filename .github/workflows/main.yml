@@ -18,10 +18,13 @@ jobs:
           Invoke-WebRequest http://download.gisinternals.com/sdk/downloads/release-1911-x64-gdal-2-4-4-mapserver-7-4-3-libs.zip -OutFile release-1911-x64-gdal-2-4-4-mapserver-7-4-3-libs.zip
           mkdir C:\Software\GDAL\
           unzip release-1911-x64-gdal-2-4-4-mapserver-7-4-3-libs.zip -d C:\Software\GDAL
-      - name: Install GEOS
-        uses: teddyking/dependency-action@master
+      - name: Download GEOS
+        run: |
+          Invoke-WebRequest http://download.osgeo.org/osgeo4w/x86_64/release/geos/geos-3.8.1-1.tar.bz2 -OutFile geos-3.8.1-1.tar.bz2
+      - name: Extract GEOS tar.bz2
+        uses: edgarrc/action-7zip@v1.0.4
         with:
-          deps: http://download.osgeo.org/osgeo4w/x86_64/release/geos/geos-3.8.1-1.tar.bz2
+          args: 7z e geos-3.8.1-1.tar.bz2 -oC:\Software\GEOS
       - name: Install Geoflow
         run: |
           dir %HOME%
@@ -31,7 +34,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -DCMAKE_INSTALL_PREFIX=C:\Software -DGDAL_INCLUDE_DIR=C:\Software\GDAL\include -DGDAL_LIBRARY=C:\Software\GDAL\lib\gdal_i.lib -DGEOS_INCLUDE_DIR=%HOME%\include -DGEOS_LIBRARY=%HOME%\lib\geos_c.lib
+          cmake .. -DCMAKE_INSTALL_PREFIX=C:\Software -DGDAL_INCLUDE_DIR=C:\Software\GDAL\include -DGDAL_LIBRARY=C:\Software\GDAL\lib\gdal_i.lib -DGEOS_INCLUDE_DIR=C:\Software\GEOS\include -DGEOS_LIBRARY=C:\Software\GEOS\lib\geos_c.lib
           cmake --build . --target gfp_gdal --parallel 4 --config Release
       - name: Create artifact
         uses: actions/upload-artifact@master
