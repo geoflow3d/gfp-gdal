@@ -22,9 +22,15 @@ jobs:
         run: |
           Invoke-WebRequest http://download.osgeo.org/osgeo4w/x86_64/release/geos/geos-3.8.1-1.tar.bz2 -OutFile geos-3.8.1-1.tar.bz2
       - name: Extract GEOS tar.bz2
-        uses: edgarrc/action-7zip@v1.0.4
+        uses: DuckSoft/extract-7z-action@v1.0
         with:
-          args: 7z e geos-3.8.1-1.tar.bz2 -oC:\Software\GEOS
+          pathSource: geos-3.8.1-1.tar.bz2
+          pathTarget: ./
+      - name: Extract GEOS tar
+        uses: DuckSoft/extract-7z-action@v1.0
+        with:
+          pathSource: geos-3.8.1-1.tar
+          pathTarget: C:\Software\GEOS
       - name: Install Geoflow
         run: |
           dir %HOME%
@@ -34,7 +40,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -DCMAKE_INSTALL_PREFIX=C:\Software -DGDAL_INCLUDE_DIR=C:\Software\GDAL\include -DGDAL_LIBRARY=C:\Software\GDAL\lib\gdal_i.lib -DGEOS_INCLUDE_DIR=C:\Software\GEOS\include -DGEOS_LIBRARY=C:\Software\GEOS\lib\geos_c.lib
+          cmake .. -DCMAKE_INSTALL_PREFIX=C:\Software -DGDAL_INCLUDE_DIR=C:\Software\GDAL\include -DGDAL_LIBRARY=C:\Software\GDAL\lib\gdal_i.lib -DGEOS_INCLUDE_DIR=C:\Software\GEOS\ -DGEOS_LIBRARY=C:\Software\GEOS\geos_c.lib
           cmake --build . --target gfp_gdal --parallel 4 --config Release
       - name: Create artifact
         uses: actions/upload-artifact@master
