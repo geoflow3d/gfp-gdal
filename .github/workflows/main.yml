@@ -33,7 +33,6 @@ jobs:
           pathTarget: C:\Software\GEOS
       - name: Install Geoflow
         run: |
-          dir %HOME%
           Invoke-WebRequest https://github.com/geoflow3d/geoflow/releases/download/v0.1.2/Geoflow-0.1.2-win64.exe -OutFile geoflow-setup.exe
           .\geoflow-setup.exe /S
       - name: Build
