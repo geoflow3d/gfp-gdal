@@ -18,6 +18,8 @@ jobs:
           Invoke-WebRequest http://download.gisinternals.com/sdk/downloads/release-1911-x64-gdal-2-4-4-mapserver-7-4-3-libs.zip -OutFile release-1911-x64-gdal-2-4-4-mapserver-7-4-3-libs.zip
           mkdir C:\Software\GDAL\
           unzip release-1911-x64-gdal-2-4-4-mapserver-7-4-3-libs.zip -d C:\Software\GDAL
+          Invoke-WebRequest http://download.gisinternals.com/sdk/downloads/release-1911-x64-gdal-2-4-4-mapserver-7-4-3.zip -OutFile release-1911-x64-gdal-2-4-4-mapserver-7-4-3.zip
+          unzip release-1911-x64-gdal-2-4-4-mapserver-7-4-3.zip -d C:\Software\GDAL
       - name: Download GEOS
         run: |
           Invoke-WebRequest http://download.osgeo.org/osgeo4w/x86_64/release/geos/geos-3.8.1-1.tar.bz2 -OutFile geos-3.8.1-1.tar.bz2
