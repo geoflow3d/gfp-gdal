@@ -48,7 +48,7 @@ jobs:
           mkdir gfp-gdal
           cp build\Release\gfp_gdal.dll gfp-gdal\
           cp C:\Software\GEOS\bin\geos_c.dll gfp-gdal\
-          cp C:\Software\GDAL\bin\gdal204.dll gfp-gdal\
+          cp C:\Software\GDAL\bin\*.dll gfp-gdal\
       - name: Create artifact
         uses: actions/upload-artifact@master
         with:
