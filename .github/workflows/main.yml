@@ -43,8 +43,14 @@ jobs:
           cd build
           cmake .. -DCMAKE_INSTALL_PREFIX=C:\Software -DGEOS_INCLUDE_DIR=C:\Software\GEOS\include -DGEOS_LIBRARY=C:\Software\GEOS\lib\geos_c.lib -DGDAL_INCLUDE_DIR=C:\Software\GDAL\include -DGDAL_LIBRARY=C:\Software\GDAL\lib\gdal_i.lib
           cmake --build . --target gfp_gdal --parallel 4 --config Release
+      - name: Collect dll's
+        run: |
+          mkdir gfp-gdal
+          cp build\Release\gfp_gdal.dll gfp-gdal\
+          cp C:\Software\GEOS\bin\geos_c.dll gfp-gdal\
+          cp C:\Software\GDAL\bin\gdal204.dll gfp-gdal\
       - name: Create artifact
         uses: actions/upload-artifact@master
         with:
           name: gfp_gdal-win64
-          path: build/Release/gfp_gdal.dll
+          path: gfp-gdal
