@@ -69,5 +69,5 @@ jobs:
       - name: Create artifact
         uses: actions/upload-artifact@master
         with:
-          name: gfp_gdal-win64
+          name: gfp-gdal-win64
           path: gfp-gdal
