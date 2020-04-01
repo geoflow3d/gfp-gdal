@@ -46,9 +46,26 @@ jobs:
       - name: Collect dll's
         run: |
           mkdir gfp-gdal
+          mkdir gfp-gdal\deps
           cp build\Release\gfp_gdal.dll gfp-gdal\
-          cp C:\Software\GEOS\bin\geos_c.dll gfp-gdal\
-          cp C:\Software\GDAL\bin\*.dll gfp-gdal\
+          cp C:\Software\GDAL\bin\expat.dll gfp-gdal\deps
+          cp C:\Software\GDAL\bin\freexl.dll gfp-gdal\deps
+          cp C:\Software\GDAL\bin\gdal204.dll gfp-gdal\deps
+          cp C:\Software\GDAL\bin\iconv.dll gfp-gdal\deps
+          cp C:\Software\GDAL\bin\libcurl.dll gfp-gdal\deps
+          cp C:\Software\GDAL\bin\libeay32.dll gfp-gdal\deps
+          cp C:\Software\GDAL\bin\libmysql.dll gfp-gdal\deps
+          cp C:\Software\GDAL\bin\libpq.dll gfp-gdal\deps
+          cp C:\Software\GDAL\bin\libxml2.dll gfp-gdal\deps
+          cp C:\Software\GDAL\bin\openjp2.dll gfp-gdal\deps
+          cp C:\Software\GDAL\bin\proj.dll gfp-gdal\deps
+          cp C:\Software\GDAL\bin\spatiallite.dll gfp-gdal\deps
+          cp C:\Software\GDAL\bin\sqlite3.dll gfp-gdal\deps
+          cp C:\Software\GDAL\bin\ssleay32.dll gfp-gdal\deps
+          cp C:\Software\GDAL\bin\xerces-c_3_2.dll gfp-gdal\deps
+          cp C:\Software\GDAL\bin\zlib1.dll gfp-gdal\deps
+          cp C:\Software\GEOS\bin\geos_c.dll gfp-gdal\deps
+          cp C:\Software\GEOS\bin\geos.dll gfp-gdal\deps
       - name: Create artifact
         uses: actions/upload-artifact@master
         with:
