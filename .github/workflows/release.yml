@@ -18,8 +18,8 @@ jobs:
       - name: Build project # This would actually build your project, using zip for an example artifact
         uses: actions/download-artifact@v1
         with:
-          name: gfp_gdal-win64
-          path: build-artifact
+          name: gfp-gdal-win64
+          path: build-artifact/
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -38,5 +38,5 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./build-artifact/gfp_gdal-win64.zip
-          asset_name: gfp_gdal-win64.zip
+          asset_name: gfp-gdal-win64.zip
           asset_content_type: application/zip
