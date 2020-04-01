@@ -14,7 +14,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Build
-        uses: ././github/actions/main
+        uses: ././github/actions/build.yml
       - name: Build project # This would actually build your project, using zip for an example artifact
         uses: actions/download-artifact@v1
         with:
