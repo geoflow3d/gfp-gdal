@@ -59,7 +59,7 @@ jobs:
           cp C:\Software\GDAL\bin\libxml2.dll gfp-gdal\deps\
           cp C:\Software\GDAL\bin\openjp2.dll gfp-gdal\deps\
           cp C:\Software\GDAL\bin\proj.dll gfp-gdal\deps\
-          cp C:\Software\GDAL\bin\spatiallite.dll gfp-gdal\deps\
+          cp C:\Software\GDAL\bin\spatialite.dll gfp-gdal\deps\
           cp C:\Software\GDAL\bin\sqlite3.dll gfp-gdal\deps\
           cp C:\Software\GDAL\bin\ssleay32.dll gfp-gdal\deps\
           cp C:\Software\GDAL\bin\xerces-c_3_2.dll gfp-gdal\deps\
