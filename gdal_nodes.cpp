@@ -238,7 +238,7 @@ void OGRWriterNode::process()
   //    const char *gszDriverName = "ESRI Shapefile";
   GDALDriver* poDriver;
 
-  poDriver = GetGDALDriverManager()->GetDriverByName(gdaldriver.c_str());
+  poDriver = GetGDALDriverManager()->GetDriverByName(manager.substitute_globals(gdaldriver).c_str());
   if (poDriver == nullptr) {
     printf("%s driver not available.\n", gdaldriver.c_str());
     exit(1);
