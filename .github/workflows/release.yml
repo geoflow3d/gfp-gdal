@@ -46,6 +46,7 @@ jobs:
         run: |
           mkdir gfp-gdal
           mkdir gfp-gdal\deps
+          mkdir gfp-gdal\gdal-data
           cp build\Release\gfp_gdal.dll gfp-gdal\
           cp C:\Software\GDAL\bin\expat.dll gfp-gdal\deps\
           cp C:\Software\GDAL\bin\freexl.dll gfp-gdal\deps\
@@ -62,6 +63,7 @@ jobs:
           cp C:\Software\GDAL\bin\sqlite3.dll gfp-gdal\deps\
           cp C:\Software\GDAL\bin\ssleay32.dll gfp-gdal\deps\
           cp C:\Software\GDAL\bin\xerces-c_3_2.dll gfp-gdal\deps\
+          cp C:\Software\GDAL\gdal-data\* gfp-gdal\gdal-data\
           cp C:\Software\GDAL\bin\zlib1.dll gfp-gdal\deps\
           cp C:\Software\GEOS\bin\geos_c.dll gfp-gdal\deps\
           cp C:\Software\GEOS\bin\geos.dll gfp-gdal\deps\
