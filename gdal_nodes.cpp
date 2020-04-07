@@ -231,6 +231,15 @@ OGRPolygon OGRWriterNode::create_polygon(const LinearRing& lr) {
   return ogrpoly;
 }
 
+void OGRWriterNode::on_receive(gfMultiFeatureInputTerminal& it) {
+  key_options.clear();
+  if(&it == &poly_input("attributes")) {
+    for(auto sub_term : it.sub_terminals()) {
+      key_options.push_back(sub_term->get_name());
+    }
+  }
+};
+
 void OGRWriterNode::process()
 {
   auto& geom_term = vector_input("geometries");
@@ -317,16 +326,22 @@ void OGRWriterNode::process()
   std::unordered_map<std::string, size_t> attr_id_map;
   int fcnt = poLayer->GetLayerDefn()->GetFieldCount();
   for (auto& term : poly_input("attributes").sub_terminals()) {
-    auto name = term->get_name();
+    std::string name = term->get_name();
+    //see if we need to map this name to another one
+    auto search = output_attribute_names.find(name);
+    if(search != output_attribute_names.end()) {
+      if(search->second.size()!=0)
+        name = search->second;
+    }
     if (term->accepts_type(typeid(float))) {
       create_field(poLayer, name, OFTReal);
-      attr_id_map[name] = fcnt++;
+      attr_id_map[term->get_name()] = fcnt++;
     } else if (term->accepts_type(typeid(int))) {
       create_field(poLayer, name, OFTInteger64);
-      attr_id_map[name] = fcnt++;
+      attr_id_map[term->get_name()] = fcnt++;
     } else if (term->accepts_type(typeid(std::string))) {
       create_field(poLayer, name, OFTString);
-      attr_id_map[name] = fcnt++;
+      attr_id_map[term->get_name()] = fcnt++;
     }
   }
 

@@ -46,6 +46,9 @@ class OGRWriterNode : public Node
   std::string lco = "";
   bool append = false;
 
+  vec1s key_options;
+  StrMap output_attribute_names;
+
   OGRPolygon create_polygon(const LinearRing& lr);
 
 public:
@@ -61,11 +64,14 @@ public:
     add_param("layername", ParamString(layername, "Layer name"));
     add_param("lco", ParamString(lco, "Layer creation options (comma separated)"));
     add_param("append", ParamBool(append, "Append to the data set?"));
+    add_param("output_attribute_names", ParamStrMap(output_attribute_names, key_options, "Output attribute names"));
 
     if (GDALGetDriverCount() == 0)
       GDALAllRegister();
   }
   void process();
+
+  void on_receive(gfMultiFeatureInputTerminal& it);
 };
 
 class CSVLoaderNode : public Node
