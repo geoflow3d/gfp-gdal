@@ -264,24 +264,27 @@ void OGRWriterNode::process()
   // Driver creation options. For now there is only one option possible.
   //  char** papszOptions = (char**)CPLCalloc(sizeof(char*), 2);
   char** papszOptions = nullptr;
-  if (append) {
+  if (!overwrite_dataset) {
     papszOptions = CSLSetNameValue(papszOptions, "APPEND_SUBDATASET", "YES");
+    poDS = (GDALDataset*) GDALDataset::Open(manager.substitute_globals(filepath).c_str(), GDAL_OF_VECTOR||GDAL_OF_UPDATE);
   } else {
     papszOptions = CSLSetNameValue(papszOptions, "APPEND_SUBDATASET", "NO");
   }
+  if (poDS == nullptr) {
+    // Create the dataset
+    poDS = poDriver->Create(manager.substitute_globals(filepath).c_str(),
+                            0,
+                            0,
+                            0,
+                            GDT_Unknown,
+                            papszOptions);
+  }
   // std::string bla("APPEND_SUBDATASET=YES");
   // CPLParseNameValue(bla.c_str(), nullptr);
-  std::cout << std::endl
-            << "APPEND_SUBDATASET="
-            << CSLFetchNameValue(papszOptions, "APPEND_SUBDATASET")
-            << std::endl;
-  // Create the driver
-  poDS = poDriver->Create(manager.substitute_globals(filepath).c_str(),
-                          0,
-                          0,
-                          0,
-                          GDT_Unknown,
-                          papszOptions);
+  // std::cout << std::endl
+  //           << "APPEND_SUBDATASET="
+  //           << CSLFetchNameValue(papszOptions, "APPEND_SUBDATASET")
+  //           << std::endl;
   if (poDS == nullptr) {
     printf("Creation of output file failed.\n");
     exit(1);
@@ -315,8 +318,11 @@ void OGRWriterNode::process()
   ////    papszOptionsLayer[i] = const_cast<char*>(lco_vec[i].c_str());
   //  }
 
-  // Frickin CreateLayer takes a char** for the lco. Whats a char** anyways!?
-  poLayer = poDS->CreateLayer(manager.substitute_globals(layername).c_str(), &oSRS, wkbType, nullptr);
+  // TODO: appending features probably requires not creating a new layer, but instead getting the layer from the dataset with GetLayer()
+  // overwrite existing layers
+  char** lco = nullptr;
+  lco = CSLSetNameValue(lco, "OVERWRITE", "YES");
+  poLayer = poDS->CreateLayer(manager.substitute_globals(layername).c_str(), &oSRS, wkbType, lco);
   if (poLayer == nullptr) {
     printf("Layer creation failed.\n");
     exit(1);
