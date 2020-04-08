@@ -34,7 +34,7 @@ jobs:
           pathTarget: C:\Software\GEOS
       - name: Install Geoflow
         run: |
-          Invoke-WebRequest https://github.com/geoflow3d/geoflow/releases/download/v0.1.2/Geoflow-0.1.2-win64.exe -OutFile geoflow-setup.exe
+          Invoke-WebRequest https://github.com/geoflow3d/geoflow/releases/download/v0.1.4/Geoflow-win64.exe -OutFile geoflow-setup.exe
           .\geoflow-setup.exe /S
       - name: Build
         run: |
@@ -63,8 +63,8 @@ jobs:
           cp C:\Software\GDAL\bin\sqlite3.dll gfp-gdal\deps\
           cp C:\Software\GDAL\bin\ssleay32.dll gfp-gdal\deps\
           cp C:\Software\GDAL\bin\xerces-c_3_2.dll gfp-gdal\deps\
-          cp C:\Software\GDAL\bin\gdal-data\* gfp-gdal\gdal-data\
           cp C:\Software\GDAL\bin\zlib1.dll gfp-gdal\deps\
+          cp C:\Software\GDAL\bin\gdal-data\* gfp-gdal\gdal-data\
           cp C:\Software\GEOS\bin\geos_c.dll gfp-gdal\deps\
           cp C:\Software\GEOS\bin\geos.dll gfp-gdal\deps\
       - name: Create artifact
