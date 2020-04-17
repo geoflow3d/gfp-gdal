@@ -43,7 +43,6 @@ class OGRWriterNode : public Node
   std::string filepath = "out";
   std::string gdaldriver = "GPKG";
   std::string layername = "geom";
-  std::string lco = "";
   bool overwrite_dataset = false;
   bool append = false;
 
@@ -63,7 +62,6 @@ public:
     add_param(ParamInt(epsg, "epsg", "EPSG"));
     add_param(ParamString(gdaldriver, "gdaldriver", "GDAL driver (format)"));
     add_param(ParamString(layername, "layername", "Layer name"));
-    add_param(ParamString(lco, "lco", "Layer creation options (comma separated)"));
     add_param(ParamBool(overwrite_dataset, "overwrite_dataset", "Overwrite dataset if it exists"));
     add_param(ParamBool(append, "append", "Append to the data set?"));
     add_param(ParamStrMap(output_attribute_names, key_options, "output_attribute_names", "Output attribute names"));
