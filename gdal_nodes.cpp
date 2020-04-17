@@ -243,20 +243,12 @@ void OGRWriterNode::on_receive(gfMultiFeatureInputTerminal& it) {
 void OGRWriterNode::process()
 {
   auto& geom_term = vector_input("geometries");
-
-  //    const char *gszDriverName = "ESRI Shapefile";
   GDALDriver* poDriver;
-
   poDriver = GetGDALDriverManager()->GetDriverByName(manager.substitute_globals(gdaldriver).c_str());
   if (poDriver == nullptr) {
     printf("%s driver not available.\n", gdaldriver.c_str());
     exit(1);
   }
-
-  GDALDataset* poDS;
-
-  // TODO: The driver and layer creation options (papszOptions) seem to have no
-  //  effect at all. I'm not sure what to do
 
   // For parsing GDAL KEY=VALUE options, see the CSL* functions in
   // https://gdal.org/api/cpl.html#cpl-string-h
@@ -273,8 +265,9 @@ void OGRWriterNode::process()
     papszOptions = CSLSetNameValue(papszOptions, "APPEND_SUBDATASET", "NO");
     // We can still overwrite the layer though
   }
+
+  GDALDataset* poDS;
   poDS = (GDALDataset*) GDALDataset::Open(manager.substitute_globals(filepath).c_str(), GDAL_OF_VECTOR||GDAL_OF_UPDATE);
-  std::cout << "filepath OUTPUT_SOURCE is " << filepath << std::endl;
   if (poDS == nullptr) {
     // Create the dataset
     poDS = poDriver->Create(manager.substitute_globals(filepath).c_str(),
@@ -303,59 +296,86 @@ void OGRWriterNode::process()
     wkbType = wkbMultiPolygon25D;
   }
 
-  //  // Parse Layer Creation Options
-  //  std::vector<std::string> lco_vec;
-  //  std::stringstream        s_stream(lco);
-  //  while (s_stream.good()) {
-  //    std::string substr;
-  //    getline(s_stream, substr, ',');
-  //    lco_vec.push_back(substr);
-  //  }
-  //  char** papszOptionsLayer = nullptr;
-  //  papszOptionsLayer =
-  //    CSLSetNameValue(papszOptionsLayer, "APPEND_SUBDATASET", "YES");
-  //  for (auto & i : lco_vec) {
-  ////    papszOptionsLayer[i] = const_cast<char*>(lco_vec[i].c_str());
-  //  }
-
-  // TODO: appending features probably requires not creating a new layer, but instead getting the layer from the dataset with GetLayer()
-  // overwrite existing layers
   char** lco = nullptr;
   if (overwrite_dataset)
     lco = CSLSetNameValue(lco, "OVERWRITE", "YES");
   else
     lco = CSLSetNameValue(lco, "OVERWRITE", "NO");
-  for( auto&& _l: poDS->GetLayers() )
-  {
-    std::cout << "Layer"  << _l->GetName() << std::endl;
-    std::cout << "here" << std::endl;
-  }
-  poLayer = poDS->CreateLayer(manager.substitute_globals(layername).c_str(), &oSRS, wkbType, lco);
-  if (poLayer == nullptr) {
-    printf("Layer creation failed.\n");
-    exit(1);
+
+  int fcnt(0);
+  int layer_cnt = poDS->GetLayerCount();
+  if (layer_cnt > 0) {
+    poLayer = poDS->GetLayer(0);
+    // When the driver is PostgreSQL AND the tables= option is used in the
+    // connection string, the GetLayer() always gets a layer, even
+    // if the table doesn't exist. So we need to check for existing fields.
+    fcnt = poLayer->GetLayerDefn()->GetFieldCount();
+    if (fcnt == 0) {
+      append             = false;
+      overwrite_dataset  = false;
+      bool tables_in_dsn = manager.substitute_globals(filepath).find(
+                             "tables=") != std::string::npos;
+      if (tables_in_dsn) {
+        printf("You are creating a new table in PostgreSQL, but also specified "
+               "the 'tables=' option in the connection string. GDAL will throw "
+               "and error, the table name will be %s in the public schema, "
+               "unless you also passed the schemas= option.\n",
+               manager.substitute_globals(layername).c_str());
+      }
+    }
+  } else {
+    append            = false;
+    overwrite_dataset = false;
   }
 
-  // Create GDAL feature attributes
   std::unordered_map<std::string, size_t> attr_id_map;
-  int fcnt = poLayer->GetLayerDefn()->GetFieldCount();
-  for (auto& term : poly_input("attributes").sub_terminals()) {
-    std::string name = term->get_name();
-    //see if we need to map this name to another one
-    auto search = output_attribute_names.find(name);
-    if(search != output_attribute_names.end()) {
-      if(search->second.size()!=0)
-        name = search->second;
+  if (not append) {
+    // overwrite or create, so field count needs to reset
+    fcnt = 0;
+    poLayer = poDS->CreateLayer(manager.substitute_globals(layername).c_str(), &oSRS, wkbType, lco);
+    if (poLayer == nullptr) {
+      printf("Layer creation failed for %s.\n",
+             manager.substitute_globals(layername).c_str());
+      exit(1);
     }
-    if (term->accepts_type(typeid(float))) {
-      create_field(poLayer, name, OFTReal);
-      attr_id_map[term->get_name()] = fcnt++;
-    } else if (term->accepts_type(typeid(int))) {
-      create_field(poLayer, name, OFTInteger64);
-      attr_id_map[term->get_name()] = fcnt++;
-    } else if (term->accepts_type(typeid(std::string))) {
-      create_field(poLayer, name, OFTString);
-      attr_id_map[term->get_name()] = fcnt++;
+    // Create GDAL feature attributes
+    for (auto& term : poly_input("attributes").sub_terminals()) {
+      std::string name = term->get_name();
+      //see if we need to map this name to another one
+      auto search = output_attribute_names.find(name);
+      if(search != output_attribute_names.end()) {
+        if(search->second.size()!=0)
+          name = search->second;
+      }
+      if (term->accepts_type(typeid(float))) {
+        create_field(poLayer, name, OFTReal);
+        attr_id_map[term->get_name()] = fcnt++;
+      } else if (term->accepts_type(typeid(int))) {
+        create_field(poLayer, name, OFTInteger64);
+        attr_id_map[term->get_name()] = fcnt++;
+      } else if (term->accepts_type(typeid(std::string))) {
+        create_field(poLayer, name, OFTString);
+        attr_id_map[term->get_name()] = fcnt++;
+      }
+    }
+  }
+  else {
+    // Fields already exist, so we need to map the poly_input("attributes")
+    // names to the gdal layer names
+    for (auto& term : poly_input("attributes").sub_terminals()) {
+      std::string name = term->get_name();
+      //NOTE BD: I'm not sure why is this needed
+      auto search = output_attribute_names.find(name);
+      if(search != output_attribute_names.end()) {
+        if(search->second.size()!=0)
+          name = search->second;
+      }
+      // attr_id_map[geoflow attribute name] = gdal field index
+      for (int i=0; i < fcnt; i++) {
+        auto fdef = poLayer->GetLayerDefn()->GetFieldDefn(i);
+        if (strcmp(fdef->GetNameRef(), name.c_str()) == 0)
+          attr_id_map[term->get_name()] = i;
+      }
     }
   }
 
@@ -428,11 +448,13 @@ void OGRWriterNode::process()
     }
 
     if (poLayer->CreateFeature(poFeature) != OGRERR_NONE) {
-      printf("Failed to create feature in geopackage.\n");
+      printf("Failed to create feature in %s.\n",
+             manager.substitute_globals(gdaldriver).c_str());
       exit(1);
     }
     OGRFeature::DestroyFeature(poFeature);
   }
+
   GDALClose(poDS);
   CSLDestroy(papszOptions);
 }
