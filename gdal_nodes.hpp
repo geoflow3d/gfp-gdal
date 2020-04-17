@@ -45,7 +45,7 @@ class OGRWriterNode : public Node
   std::string layername = "geom";
   std::string lco = "";
   bool overwrite_dataset = false;
-  // bool append = false;
+  bool append = false;
 
   vec1s key_options;
   StrMap output_attribute_names;
@@ -65,7 +65,7 @@ public:
     add_param(ParamString(layername, "layername", "Layer name"));
     add_param(ParamString(lco, "lco", "Layer creation options (comma separated)"));
     add_param(ParamBool(overwrite_dataset, "overwrite_dataset", "Overwrite dataset if it exists"));
-    // add_param(ParamBool(append, "append", "Append to the data set?"));
+    add_param(ParamBool(append, "append", "Append to the data set?"));
     add_param(ParamStrMap(output_attribute_names, key_options, "output_attribute_names", "Output attribute names"));
 
     if (GDALGetDriverCount() == 0)

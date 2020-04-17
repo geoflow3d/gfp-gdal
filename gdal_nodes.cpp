@@ -264,6 +264,17 @@ void OGRWriterNode::process()
   // Driver creation options. For now there is only one option possible.
   //  char** papszOptions = (char**)CPLCalloc(sizeof(char*), 2);
   char** papszOptions = nullptr;
+  if (append) {
+    papszOptions = CSLSetNameValue(papszOptions, "APPEND_SUBDATASET", "YES");
+    // If we append, we must overwrite too
+    overwrite_dataset = true;
+  }
+  else {
+    papszOptions = CSLSetNameValue(papszOptions, "APPEND_SUBDATASET", "NO");
+    // We can still overwrite the layer though
+  }
+  poDS = (GDALDataset*) GDALDataset::Open(manager.substitute_globals(filepath).c_str(), GDAL_OF_VECTOR||GDAL_OF_UPDATE);
+  std::cout << "filepath OUTPUT_SOURCE is " << filepath << std::endl;
   if (poDS == nullptr) {
     // Create the dataset
     poDS = poDriver->Create(manager.substitute_globals(filepath).c_str(),
@@ -314,6 +325,11 @@ void OGRWriterNode::process()
     lco = CSLSetNameValue(lco, "OVERWRITE", "YES");
   else
     lco = CSLSetNameValue(lco, "OVERWRITE", "NO");
+  for( auto&& _l: poDS->GetLayers() )
+  {
+    std::cout << "Layer"  << _l->GetName() << std::endl;
+    std::cout << "here" << std::endl;
+  }
   poLayer = poDS->CreateLayer(manager.substitute_globals(layername).c_str(), &oSRS, wkbType, lco);
   if (poLayer == nullptr) {
     printf("Layer creation failed.\n");
