@@ -242,7 +242,7 @@ void OGRWriterNode::on_receive(gfMultiFeatureInputTerminal& it) {
 void OGRWriterNode::process()
 {
   bool overwrite = overwrite_;
-  bool append = append_;
+  bool append = overwrite ? false : append_;
   std::string filepath = manager.substitute_globals(filepath_);
   std::string gdaldriver = manager.substitute_globals(gdaldriver_);
   std::string layername = manager.substitute_globals(layername_);
