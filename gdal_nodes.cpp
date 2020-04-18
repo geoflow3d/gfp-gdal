@@ -248,6 +248,9 @@ void OGRWriterNode::process()
     throw(gfException(gdaldriver + "driver not available"));
   }
 
+  bool overwrite = overwrite_;
+  bool append = append_;
+
   // For parsing GDAL KEY=VALUE options, see the CSL* functions in
   // https://gdal.org/api/cpl.html#cpl-string-h
 
@@ -257,7 +260,7 @@ void OGRWriterNode::process()
   if (append) {
     papszOptions = CSLSetNameValue(papszOptions, "APPEND_SUBDATASET", "YES");
     // If we append, we must overwrite too
-    overwrite_dataset = true;
+    overwrite = true;
   }
   else {
     papszOptions = CSLSetNameValue(papszOptions, "APPEND_SUBDATASET", "NO");
@@ -294,7 +297,7 @@ void OGRWriterNode::process()
   }
 
   char** lco = nullptr;
-  if (overwrite_dataset)
+  if (overwrite)
     lco = CSLSetNameValue(lco, "OVERWRITE", "YES");
   else
     lco = CSLSetNameValue(lco, "OVERWRITE", "NO");
@@ -308,8 +311,8 @@ void OGRWriterNode::process()
     // if the table doesn't exist. So we need to check for existing fields.
     fcnt = poLayer->GetLayerDefn()->GetFieldCount();
     if (fcnt == 0) {
-      append             = false;
-      overwrite_dataset  = false;
+      append = false;
+      overwrite  = false;
       bool tables_in_dsn = manager.substitute_globals(filepath).find(
                              "tables=") != std::string::npos;
       if (tables_in_dsn) {
@@ -321,8 +324,8 @@ void OGRWriterNode::process()
       }
     }
   } else {
-    append            = false;
-    overwrite_dataset = false;
+    append = false;
+    overwrite = false;
   }
 
   std::unordered_map<std::string, size_t> attr_id_map;
