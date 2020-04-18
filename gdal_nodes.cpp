@@ -333,19 +333,20 @@ void OGRWriterNode::process()
   }
 
   std::unordered_map<std::string, size_t> attr_id_map;
-  if (not append) {
+  if (!append) {
     // overwrite or create, so field count needs to reset
     fcnt = 0;
-    poLayer = poDS->CreateLayer(manager.substitute_globals(layername).c_str(), &oSRS, wkbType, lco);
+    poLayer = poDS->CreateLayer(layername.c_str(), &oSRS, wkbType, lco);
     if (poLayer == nullptr) {             
-      throw(gfException("Layer creation failed for " + manager.substitute_globals(layername)));
+      throw(gfException("Layer creation failed for " + layername));
     }
     // Create GDAL feature attributes
     for (auto& term : poly_input("attributes").sub_terminals()) {
       std::string name = term->get_name();
-      //see if we need to map this name to another one
+      //see if we need to rename this attribute
       auto search = output_attribute_names.find(name);
       if(search != output_attribute_names.end()) {
+        //ignore if the new name is an empty string
         if(search->second.size()!=0)
           name = search->second;
       }
@@ -360,15 +361,16 @@ void OGRWriterNode::process()
         attr_id_map[term->get_name()] = fcnt++;
       }
     }
-  }
-  else {
+  } else {
     // Fields already exist, so we need to map the poly_input("attributes")
     // names to the gdal layer names
+    // But: what if layer has a different set of attributes?
     for (auto& term : poly_input("attributes").sub_terminals()) {
       std::string name = term->get_name();
-      //NOTE BD: I'm not sure why is this needed
+      //see if we need to rename this attribute
       auto search = output_attribute_names.find(name);
       if(search != output_attribute_names.end()) {
+        //ignore if the new name is an empty string
         if(search->second.size()!=0)
           name = search->second;
       }
@@ -381,10 +383,10 @@ void OGRWriterNode::process()
     }
   }
 
-  // Add the attributes to the feature
   for (size_t i = 0; i != geom_term.size(); ++i) {
     OGRFeature* poFeature;
     poFeature = OGRFeature::CreateFeature(poLayer->GetLayerDefn());
+    // Add the attributes to the feature
     for (auto& term : poly_input("attributes").sub_terminals()) {
       auto tname = term->get_name();
       if (term->accepts_type(typeid(float))) {
