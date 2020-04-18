@@ -40,11 +40,11 @@ public:
 class OGRWriterNode : public Node
 {
   int epsg = 7415;
-  std::string filepath = "out";
-  std::string gdaldriver = "GPKG";
-  std::string layername = "geom";
-  bool overwrite = false;
-  bool append = false;
+  std::string filepath_ = "out";
+  std::string gdaldriver_ = "GPKG";
+  std::string layername_ = "geom";
+  bool overwrite_ = false;
+  bool append_ = false;
 
   vec1s key_options;
   StrMap output_attribute_names;
@@ -58,12 +58,12 @@ public:
     add_vector_input("geometries", {typeid(LineString), typeid(LinearRing), typeid(TriangleCollection), typeid(Mesh)});
     add_poly_input("attributes", {typeid(bool), typeid(int), typeid(float), typeid(std::string)}, false);
 
-    add_param(ParamPath(filepath, "filepath", "File path"));
+    add_param(ParamPath(filepath_, "filepath", "File path"));
     add_param(ParamInt(epsg, "epsg", "EPSG"));
-    add_param(ParamString(gdaldriver, "gdaldriver", "GDAL driver (format)"));
-    add_param(ParamString(layername, "layername", "Layer name"));
-    add_param(ParamBool(overwrite, "overwrite", "Overwrite dataset if it exists"));
-    add_param(ParamBool(append, "append", "Append to the data set?"));
+    add_param(ParamString(gdaldriver_, "gdaldriver", "GDAL driver (format)"));
+    add_param(ParamString(layername_, "layername", "Layer name"));
+    add_param(ParamBool(overwrite_, "overwrite", "Overwrite dataset if it exists"));
+    add_param(ParamBool(append_, "append", "Append to the data set?"));
     add_param(ParamStrMap(output_attribute_names, key_options, "output_attribute_names", "Output attribute names"));
 
     if (GDALGetDriverCount() == 0)

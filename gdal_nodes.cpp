@@ -241,15 +241,19 @@ void OGRWriterNode::on_receive(gfMultiFeatureInputTerminal& it) {
 
 void OGRWriterNode::process()
 {
+  bool overwrite = overwrite_;
+  bool append = append_;
+  std::string filepath = manager.substitute_globals(filepath_);
+  std::string gdaldriver = manager.substitute_globals(gdaldriver_);
+  std::string layername = manager.substitute_globals(layername_);
+
   auto& geom_term = vector_input("geometries");
   GDALDriver* poDriver;
-  poDriver = GetGDALDriverManager()->GetDriverByName(manager.substitute_globals(gdaldriver).c_str());
+  poDriver = GetGDALDriverManager()->GetDriverByName(gdaldriver.c_str());
   if (poDriver == nullptr) {
     throw(gfException(gdaldriver + "driver not available"));
   }
 
-  bool overwrite = overwrite_;
-  bool append = append_;
 
   // For parsing GDAL KEY=VALUE options, see the CSL* functions in
   // https://gdal.org/api/cpl.html#cpl-string-h
@@ -268,10 +272,10 @@ void OGRWriterNode::process()
   }
 
   GDALDataset* poDS;
-  poDS = (GDALDataset*) GDALDataset::Open(manager.substitute_globals(filepath).c_str(), GDAL_OF_VECTOR||GDAL_OF_UPDATE);
+  poDS = (GDALDataset*) GDALDataset::Open(filepath.c_str(), GDAL_OF_VECTOR||GDAL_OF_UPDATE);
   if (poDS == nullptr) {
     // Create the dataset
-    poDS = poDriver->Create(manager.substitute_globals(filepath).c_str(),
+    poDS = poDriver->Create(filepath.c_str(),
                             0,
                             0,
                             0,
@@ -280,7 +284,7 @@ void OGRWriterNode::process()
   }
 
   if (poDS == nullptr) {
-    throw(gfException("Creation of output file failed."));
+    throw(gfException("Creation/Opening of output file failed."));
   }
 
   OGRSpatialReference oSRS;
@@ -313,14 +317,14 @@ void OGRWriterNode::process()
     if (fcnt == 0) {
       append = false;
       overwrite  = false;
-      bool tables_in_dsn = manager.substitute_globals(filepath).find(
+      bool tables_in_dsn = filepath.find(
                              "tables=") != std::string::npos;
       if (tables_in_dsn) {
         printf("You are creating a new table in PostgreSQL, but also specified "
                "the 'tables=' option in the connection string. GDAL will throw "
                "and error, the table name will be %s in the public schema, "
                "unless you also passed the schemas= option.\n",
-               manager.substitute_globals(layername).c_str());
+               layername.c_str());
       }
     }
   } else {
@@ -446,7 +450,7 @@ void OGRWriterNode::process()
     }
 
     if (poLayer->CreateFeature(poFeature) != OGRERR_NONE) {
-      throw(gfException("Failed to create feature in "+manager.substitute_globals(gdaldriver)));
+      throw(gfException("Failed to create feature in "+gdaldriver));
     }
     OGRFeature::DestroyFeature(poFeature);
   }
