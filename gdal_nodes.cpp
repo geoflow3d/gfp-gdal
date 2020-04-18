@@ -200,8 +200,7 @@ void OGRLoaderNode::process()
 inline void create_field(OGRLayer* poLayer, std::string& name, OGRFieldType field_type) {
   OGRFieldDefn oField(name.c_str(), field_type);
   if (poLayer->CreateField(&oField) != OGRERR_NONE) {
-    printf("Creating field failed.\n");
-    exit(1);
+    throw(gfException("Creating field failed"));
   }
 }
 
@@ -246,8 +245,7 @@ void OGRWriterNode::process()
   GDALDriver* poDriver;
   poDriver = GetGDALDriverManager()->GetDriverByName(manager.substitute_globals(gdaldriver).c_str());
   if (poDriver == nullptr) {
-    printf("%s driver not available.\n", gdaldriver.c_str());
-    exit(1);
+    throw(gfException(gdaldriver + "driver not available"));
   }
 
   // For parsing GDAL KEY=VALUE options, see the CSL* functions in
@@ -279,8 +277,7 @@ void OGRWriterNode::process()
   }
 
   if (poDS == nullptr) {
-    printf("Creation of output file failed.\n");
-    exit(1);
+    throw(gfException("Creation of output file failed."));
   }
 
   OGRSpatialReference oSRS;
@@ -333,10 +330,8 @@ void OGRWriterNode::process()
     // overwrite or create, so field count needs to reset
     fcnt = 0;
     poLayer = poDS->CreateLayer(manager.substitute_globals(layername).c_str(), &oSRS, wkbType, lco);
-    if (poLayer == nullptr) {
-      printf("Layer creation failed for %s.\n",
-             manager.substitute_globals(layername).c_str());
-      exit(1);
+    if (poLayer == nullptr) {             
+      throw(gfException("Layer creation failed for " + manager.substitute_globals(layername)));
     }
     // Create GDAL feature attributes
     for (auto& term : poly_input("attributes").sub_terminals()) {
@@ -448,9 +443,7 @@ void OGRWriterNode::process()
     }
 
     if (poLayer->CreateFeature(poFeature) != OGRERR_NONE) {
-      printf("Failed to create feature in %s.\n",
-             manager.substitute_globals(gdaldriver).c_str());
-      exit(1);
+      throw(gfException("Failed to create feature in "+manager.substitute_globals(gdaldriver)));
     }
     OGRFeature::DestroyFeature(poFeature);
   }
