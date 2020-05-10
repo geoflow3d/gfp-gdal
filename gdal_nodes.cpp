@@ -40,7 +40,8 @@ void OGRLoaderNode::process()
   }
   layer_count = poDS->GetLayerCount();
   std::cout << "Layer count: " << layer_count << "\n";
-  layer_id = 0;
+  if (layer_id < 0 || layer_id >= layer_count)
+    std::cout << "Illegal layer ID!";
 
   // Set up vertex data (and buffer(s)) and attribute pointers
   // LineStringCollection line_strings;

@@ -29,7 +29,7 @@ public:
 
     add_param(ParamPath(filepath, "filepath", "File path"));
     add_param(ParamFloat(base_elevation, "base_elevation", "Base elevation"));
-    // add_param(ParamInt(layer_id, "layer_id", "Layer ID"));
+    add_param(ParamInt(layer_id, "layer_id", "Layer ID"));
 
     if (GDALGetDriverCount() == 0)
       GDALAllRegister();
