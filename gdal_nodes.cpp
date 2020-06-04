@@ -252,9 +252,8 @@ void OGRWriterNode::process()
   GDALDriver* poDriver;
   poDriver = GetGDALDriverManager()->GetDriverByName(gdaldriver.c_str());
   if (poDriver == nullptr) {
-    throw(gfException(gdaldriver + "driver not available"));
+    throw(gfException(gdaldriver + " driver not available"));
   }
-
 
   // For parsing GDAL KEY=VALUE options, see the CSL* functions in
   // https://gdal.org/api/cpl.html#cpl-string-h
@@ -283,9 +282,14 @@ void OGRWriterNode::process()
                             GDT_Unknown,
                             papszOptions);
   }
+  bool do_transactions = poDS->TestCapability("ODsCTransactions");
 
   if (poDS == nullptr) {
     throw(gfException("Creation/Opening of output file failed."));
+  }
+
+  if (do_transactions && poDS->StartTransaction() != OGRERR_NONE) {
+    throw(gfException("Starting database transaction failed.\n"));
   }
 
   OGRSpatialReference oSRS;
@@ -361,6 +365,12 @@ void OGRWriterNode::process()
         create_field(poLayer, name, OFTString);
         attr_id_map[term->get_name()] = fcnt++;
       }
+    }
+    if (do_transactions && poDS->CommitTransaction() != OGRERR_NONE) {
+      throw(gfException("Creating database transaction failed.\n"));
+    }
+    if (do_transactions && poDS->StartTransaction() != OGRERR_NONE) {
+      throw(gfException("Starting database transaction failed.\n"));
     }
   } else {
     // Fields already exist, so we need to map the poly_input("attributes")
@@ -456,6 +466,9 @@ void OGRWriterNode::process()
       throw(gfException("Failed to create feature in "+gdaldriver));
     }
     OGRFeature::DestroyFeature(poFeature);
+  }
+  if (do_transactions && poDS->CommitTransaction() != OGRERR_NONE) {
+    throw(gfException("Committing features to database failed.\n"));
   }
 
   GDALClose(poDS);
