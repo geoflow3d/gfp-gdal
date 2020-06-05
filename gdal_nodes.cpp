@@ -282,7 +282,9 @@ void OGRWriterNode::process()
                             GDT_Unknown,
                             papszOptions);
   }
-  bool do_transactions = poDS->TestCapability("ODsCTransactions");
+  std::cout << "\nUsing driver: " << poDS->GetDriverName() << "\n";
+  bool do_transactions = poDS->TestCapability(ODsCTransactions);
+  std::cout << "Transactions support: " << (do_transactions ? "yes" : "no") << "\n";
 
   if (poDS == nullptr) {
     throw(gfException("Creation/Opening of output file failed."));
