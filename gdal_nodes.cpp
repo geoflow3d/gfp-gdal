@@ -15,7 +15,11 @@ void OGRLoaderNode::push_attributes(OGRFeature &poFeature)
 {
   for (auto &[name, mterm] : poly_output("attributes").sub_terminals())
   {
-    if (mterm->accepts_type(typeid(int)))
+    if (mterm->accepts_type(typeid(bool)))
+    {
+      mterm->push_back(bool(poFeature.GetFieldAsInteger(name.c_str())));
+    }
+    else if (mterm->accepts_type(typeid(int)))
     {
       mterm->push_back(int(poFeature.GetFieldAsInteger64(name.c_str())));
     }
@@ -64,7 +68,11 @@ void OGRLoaderNode::process()
     auto field_def = layer_def->GetFieldDefn(i);
     auto t = field_def->GetType();
     auto field_name = (std::string)field_def->GetNameRef();
-    if (t == OFTInteger || t == OFTInteger64)
+    if ((t == OFTInteger) && (field_def->GetSubType() == OFSTBoolean)) 
+    {
+      auto &term = poly_output("attributes").add_vector(field_name, typeid(bool));
+    } 
+    else if (t == OFTInteger || t == OFTInteger64)
     {
       auto &term = poly_output("attributes").add_vector(field_name, typeid(int));
       // term.set(vec1i());
@@ -357,7 +365,14 @@ void OGRWriterNode::process()
         if(search->second.size()!=0)
           name = search->second;
       }
-      if (term->accepts_type(typeid(float))) {
+      if (term->accepts_type(typeid(bool))) {
+        OGRFieldDefn oField(name.c_str(), OFTInteger);
+        oField.SetSubType(OFSTBoolean);
+        if (poLayer->CreateField(&oField) != OGRERR_NONE) {
+          throw(gfException("Creating field failed"));
+        }
+        attr_id_map[term->get_name()] = fcnt++;
+      } else if (term->accepts_type(typeid(float))) {
         create_field(poLayer, name, OFTReal);
         attr_id_map[term->get_name()] = fcnt++;
       } else if (term->accepts_type(typeid(int))) {
@@ -402,7 +417,10 @@ void OGRWriterNode::process()
     // Add the attributes to the feature
     for (auto& term : poly_input("attributes").sub_terminals()) {
       auto tname = term->get_name();
-      if (term->accepts_type(typeid(float))) {
+      if (term->accepts_type(typeid(bool))) {
+        auto& val = term->get<const bool&>(i);
+        poFeature->SetField(attr_id_map[tname], val);
+      } else if (term->accepts_type(typeid(float))) {
         auto& val = term->get<const float&>(i);
         poFeature->SetField(attr_id_map[tname], val);
       } else if (term->accepts_type(typeid(int))) {
