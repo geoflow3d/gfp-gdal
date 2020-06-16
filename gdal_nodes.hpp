@@ -74,6 +74,45 @@ public:
   void on_receive(gfMultiFeatureInputTerminal& it);
 };
 
+class OGRPostGISWriterNode : public Node
+{
+  int epsg = 7415;
+  std::string conn_string_ = "out";
+  std::string gdaldriver_ = "PostgreSQL";
+  std::string layername_ = "geom";
+  bool overwrite_ = false;
+  // bool append_ = false;
+  int transaction_batch_size_ = 1000;
+
+  vec1s key_options;
+  StrMap output_attribute_names;
+
+  OGRPolygon create_polygon(const LinearRing& lr);
+
+public:
+  using Node::Node;
+  void init()
+  {
+    add_vector_input("geometries", {typeid(LineString), typeid(LinearRing), typeid(TriangleCollection), typeid(Mesh)});
+    add_poly_input("attributes", {typeid(bool), typeid(int), typeid(float), typeid(std::string)}, false);
+
+    add_param(ParamPath(conn_string_, "filepath", "Connection string"));
+    add_param(ParamInt(epsg, "epsg", "EPSG"));
+    add_param(ParamInt(transaction_batch_size_, "transaction_batch_size_", "Trnasaction batch size"));
+    // add_param(ParamString(gdaldriver_, "gdaldriver", "GDAL driver (format)"));
+    add_param(ParamString(layername_, "layername", "Layer name"));
+    add_param(ParamBool(overwrite_, "overwrite", "Overwrite dataset if it exists"));
+    // add_param(ParamBool(append_, "append", "Append to the data set?"));
+    add_param(ParamStrMap(output_attribute_names, key_options, "output_attribute_names", "Output attribute names"));
+
+    if (GDALGetDriverCount() == 0)
+      GDALAllRegister();
+  }
+  void process();
+
+  void on_receive(gfMultiFeatureInputTerminal& it);
+};
+
 class CSVLoaderNode : public Node
 {
   std::string filepath = "out";
@@ -119,16 +158,4 @@ public:
   void process();
 };
 
-class PolygonUnionNode : public Node
-{
-public:
-  using Node::Node;
-  void init()
-  {
-    add_vector_input("polygons", typeid(LinearRing));
-    add_vector_output("polygons", typeid(LinearRing));
-    add_vector_output("holes", typeid(LinearRing));
-  }
-  void process();
-};
 } // namespace geoflow::nodes::gdal

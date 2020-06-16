@@ -586,8 +586,4 @@ void GEOSMergeLinesNode::process()
   output("lines").set(outputLines);
 }
 
-void PolygonUnionNode::process()
-{
-}
-
 } // namespace geoflow::nodes::gdal
