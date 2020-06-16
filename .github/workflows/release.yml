@@ -34,7 +34,7 @@ jobs:
           pathTarget: C:\Software\GEOS
       - name: Install Geoflow
         run: |
-          Invoke-WebRequest https://github.com/gruntwork-io/fetch/releases/download/v0.3.7/fetch_windows_amd64.exe -OutFile fetch.
+          Invoke-WebRequest https://github.com/gruntwork-io/fetch/releases/download/v0.3.7/fetch_windows_amd64.exe -OutFile fetch.exe
           .\fetch.exe --repo="https://github.com/geoflow3d/geoflow" --tag=">=0.1.4" --release-asset="Geoflow-win64.exe" .\
           .\Geoflow-win64.exe /S
       - name: Build
