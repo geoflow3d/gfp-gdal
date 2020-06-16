@@ -14,11 +14,11 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install GDAL
         run: |
-          Invoke-WebRequest http://download.gisinternals.com/sdk/downloads/release-1911-x64-gdal-2-4-4-mapserver-7-4-3-libs.zip -OutFile release-1911-x64-gdal-2-4-4-mapserver-7-4-3-libs.zip
+          Invoke-WebRequest http://download.gisinternals.com/sdk/downloads/release-1911-x64-gdal-3-0-4-mapserver-7-4-3-libs.zip -OutFile release-1911-x64-gdal-3-0-4-mapserver-7-4-3-libs.zip
           mkdir C:\Software\GDAL\
-          unzip release-1911-x64-gdal-2-4-4-mapserver-7-4-3-libs.zip -d C:\Software\GDAL
-          Invoke-WebRequest http://download.gisinternals.com/sdk/downloads/release-1911-x64-gdal-2-4-4-mapserver-7-4-3.zip -OutFile release-1911-x64-gdal-2-4-4-mapserver-7-4-3.zip
-          unzip release-1911-x64-gdal-2-4-4-mapserver-7-4-3.zip -d C:\Software\GDAL
+          unzip release-1911-x64-gdal-3-0-4-mapserver-7-4-3-libs.zip -d C:\Software\GDAL
+          Invoke-WebRequest http://download.gisinternals.com/sdk/downloads/release-1911-x64-gdal-3-0-4-mapserver-7-4-3.zip -OutFile release-1911-x64-gdal-3-0-4-mapserver-7-4-3.zip
+          unzip release-1911-x64-gdal-3-0-4-mapserver-7-4-3.zip -d C:\Software\GDAL
       - name: Download GEOS
         run: |
           Invoke-WebRequest http://download.osgeo.org/osgeo4w/x86_64/release/geos/geos-3.8.1-1.tar.bz2 -OutFile geos-3.8.1-1.tar.bz2
@@ -49,25 +49,8 @@ jobs:
           mkdir gfp-gdal\deps
           mkdir gfp-gdal\gdal-data
           cp build\Release\gfp_gdal.dll gfp-gdal\
-          cp C:\Software\GDAL\bin\expat.dll gfp-gdal\deps\
-          cp C:\Software\GDAL\bin\freexl.dll gfp-gdal\deps\
-          cp C:\Software\GDAL\bin\gdal204.dll gfp-gdal\deps\
-          cp C:\Software\GDAL\bin\iconv.dll gfp-gdal\deps\
-          cp C:\Software\GDAL\bin\libcurl.dll gfp-gdal\deps\
-          cp C:\Software\GDAL\bin\libeay32.dll gfp-gdal\deps\
-          cp C:\Software\GDAL\bin\libmysql.dll gfp-gdal\deps\
-          cp C:\Software\GDAL\bin\libpq.dll gfp-gdal\deps\
-          cp C:\Software\GDAL\bin\libxml2.dll gfp-gdal\deps\
-          cp C:\Software\GDAL\bin\openjp2.dll gfp-gdal\deps\
-          cp C:\Software\GDAL\bin\proj.dll gfp-gdal\deps\
-          cp C:\Software\GDAL\bin\spatialite.dll gfp-gdal\deps\
-          cp C:\Software\GDAL\bin\sqlite3.dll gfp-gdal\deps\
-          cp C:\Software\GDAL\bin\ssleay32.dll gfp-gdal\deps\
-          cp C:\Software\GDAL\bin\xerces-c_3_2.dll gfp-gdal\deps\
-          cp C:\Software\GDAL\bin\zlib1.dll gfp-gdal\deps\
           cp C:\Software\GDAL\bin\gdal-data\* gfp-gdal\gdal-data\
-          cp C:\Software\GEOS\bin\geos_c.dll gfp-gdal\deps\
-          cp C:\Software\GEOS\bin\geos.dll gfp-gdal\deps\
+          cp C:\Software\GDAL\bin\*.dll gfp-gdal\deps\
       - name: Create artifact
         uses: actions/upload-artifact@master
         with:
