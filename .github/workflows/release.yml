@@ -51,8 +51,10 @@ jobs:
           mkdir gfp-gdal
           mkdir gfp-gdal\deps
           mkdir gfp-gdal\gdal-data
+          mkdir gfp-gdal\proj-data
           cp build\Release\gfp_gdal.dll gfp-gdal\
           cp C:\Software\GDAL\bin\gdal-data\* gfp-gdal\gdal-data\
+          cp C:\Software\GDAL\bin\proj6\share\* gfp-gdal\proj-data
           cp C:\Software\GDAL\bin\*.dll gfp-gdal\deps\
           cp C:\Software\GEOS\bin\geos_c.dll gfp-gdal\deps\
           cp C:\Software\GEOS\bin\geos.dll gfp-gdal\deps\
