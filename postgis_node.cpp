@@ -173,6 +173,7 @@ void OGRPostGISWriterNode::process()
     poFeature = OGRFeature::CreateFeature(layer->GetLayerDefn());
     // Add the attributes to the feature
     for (auto& term : poly_input("attributes").sub_terminals()) {
+      if (!term->get_data_vec()[i].has_value()) continue;
       auto tname = term->get_name();
       if (term->accepts_type(typeid(bool))) {
         auto& val = term->get<const bool&>(i);
