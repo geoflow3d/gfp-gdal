@@ -45,6 +45,7 @@ class OGRWriterNode : public Node
   std::string layername_ = "geom";
   bool overwrite_ = false;
   bool append_ = false;
+  bool require_attributes_ = false;
 
   vec1s key_options;
   StrMap output_attribute_names;
@@ -64,11 +65,20 @@ public:
     add_param(ParamString(layername_, "layername", "Layer name"));
     add_param(ParamBool(overwrite_, "overwrite", "Overwrite dataset if it exists"));
     add_param(ParamBool(append_, "append", "Append to the data set?"));
+    add_param(ParamBool(require_attributes_, "require_attributes", "Only run when attributes input is connected"));
     add_param(ParamStrMap(output_attribute_names, key_options, "output_attribute_names", "Output attribute names"));
 
     if (GDALGetDriverCount() == 0)
       GDALAllRegister();
   }
+  bool inputs_valid() {
+    if (require_attributes_) {
+      return vector_input("geometries").has_data() && poly_input("attributes").has_data();
+    } else {
+      return vector_input("geometries").has_data();
+    }
+  }
+
   void process();
 
   void on_receive(gfMultiFeatureInputTerminal& it);
