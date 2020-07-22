@@ -193,51 +193,51 @@ void OGRPostGISWriterNode::process()
     // Geometry input type handling for the feature
     // Cast the incoming geometry to the appropriate GDAL type. Note that this
     // need to be in line with what is set for wkbType above.
-    if (geom_term.is_connected_type(typeid(LinearRing))) {
-      const LinearRing& lr = geom_term.get<LinearRing>(i);
-      OGRPolygon ogrpoly = create_polygon(lr);
-      poFeature->SetGeometry(&ogrpoly);
-    }
-    if (geom_term.is_connected_type(typeid(LineString))) {
-      OGRLineString     ogrlinestring;
-      const LineString& ls = geom_term.get<LineString>(i);
-      for (auto& g : ls) {
-        ogrlinestring.addPoint(g[0] + (*manager.data_offset)[0],
-                               g[1] + (*manager.data_offset)[1],
-                               g[2] + (*manager.data_offset)[2]);
-      }
-      poFeature->SetGeometry(&ogrlinestring);
-    }
-    // Note BD: only tried this with Postgis
-    if (geom_term.is_connected_type(typeid(TriangleCollection))) {
-      OGRMultiPolygon ogrmultipoly = OGRMultiPolygon();
-      for (auto& triangle : geom_term.get<TriangleCollection>(i)) {
-        OGRPolygon    ogrpoly = OGRPolygon();
-        OGRLinearRing ring    = OGRLinearRing();
-        for (auto& vertex : triangle) {
-          ring.addPoint(vertex[0] + (*manager.data_offset)[0],
-                        vertex[1] + (*manager.data_offset)[1],
-                        vertex[2] + (*manager.data_offset)[2]);
+    if (!geom_term.get_data_vec()[i].has_value()) {
+      // set to an empty geometry
+      poFeature->SetGeometry(OGRGeometryFactory::createGeometry(wkbType));
+    } else {
+      if (geom_term.is_connected_type(typeid(LinearRing))) {
+        const LinearRing &lr = geom_term.get<LinearRing>(i);
+        OGRPolygon ogrpoly = create_polygon(lr);
+        poFeature->SetGeometry(&ogrpoly);
+      } else if (geom_term.is_connected_type(typeid(LineString))) {
+        OGRLineString ogrlinestring;
+        const LineString &ls = geom_term.get<LineString>(i);
+        for (auto &g : ls) {
+          ogrlinestring.addPoint(g[0] + (*manager.data_offset)[0],
+                                 g[1] + (*manager.data_offset)[1],
+                                 g[2] + (*manager.data_offset)[2]);
         }
-        ring.closeRings();
-        ogrpoly.addRing(&ring);
-        if (ogrmultipoly.addGeometry(&ogrpoly) != OGRERR_NONE) {
-          printf("couldn't add triangle to MultiSurfaceZ");
+        poFeature->SetGeometry(&ogrlinestring);
+      } else if (geom_term.is_connected_type(typeid(TriangleCollection))) {
+        OGRMultiPolygon ogrmultipoly = OGRMultiPolygon();
+        for (auto &triangle : geom_term.get<TriangleCollection>(i)) {
+          OGRPolygon ogrpoly = OGRPolygon();
+          OGRLinearRing ring = OGRLinearRing();
+          for (auto &vertex : triangle) {
+            ring.addPoint(vertex[0] + (*manager.data_offset)[0],
+                          vertex[1] + (*manager.data_offset)[1],
+                          vertex[2] + (*manager.data_offset)[2]);
+          }
+          ring.closeRings();
+          ogrpoly.addRing(&ring);
+          if (ogrmultipoly.addGeometry(&ogrpoly) != OGRERR_NONE) {
+            printf("couldn't add triangle to MultiSurfaceZ");
+          }
         }
-      }
-      poFeature->SetGeometry(&ogrmultipoly);
-    }
-
-    if (geom_term.is_connected_type(typeid(Mesh))) {
-      auto& mesh = geom_term.get<Mesh>(i);
-      OGRMultiPolygon ogrmultipoly = OGRMultiPolygon();
-      for (auto& poly : mesh.get_polygons()) {
-        auto ogrpoly = create_polygon(poly);
-        if (ogrmultipoly.addGeometry(&ogrpoly) != OGRERR_NONE) {
-          printf("couldn't add polygon to MultiPolygon");
+        poFeature->SetGeometry(&ogrmultipoly);
+      } else if (geom_term.is_connected_type(typeid(Mesh))) {
+        auto &mesh = geom_term.get<Mesh>(i);
+        OGRMultiPolygon ogrmultipoly = OGRMultiPolygon();
+        for (auto &poly : mesh.get_polygons()) {
+          auto ogrpoly = create_polygon(poly);
+          if (ogrmultipoly.addGeometry(&ogrpoly) != OGRERR_NONE) {
+            printf("couldn't add polygon to MultiPolygon");
+          }
         }
+        poFeature->SetGeometry(&ogrmultipoly);
       }
-      poFeature->SetGeometry(&ogrmultipoly);
     }
 
     if (layer->CreateFeature(poFeature) != OGRERR_NONE) {
