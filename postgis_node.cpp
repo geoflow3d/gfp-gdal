@@ -106,6 +106,9 @@ void OGRPostGISWriterNode::process()
     layer = dataSource->GetLayerByName(find_and_replace(layername, "-", "_").c_str());
   }
 
+  auto geom_size = geom_term.size();
+  std::cout << "creating " << geom_size << " geometry features\n";
+
   if (layer == nullptr) {
     OGRSpatialReference oSRS;
     oSRS.importFromEPSG(epsg);
@@ -114,6 +117,10 @@ void OGRPostGISWriterNode::process()
     // Create GDAL feature attributes
     for (auto& term : poly_input("attributes").sub_terminals()) {
       std::string name = term->get_name();
+      if (geom_size != term->get_data_vec().size()) {
+        throw(gfException("Number of attributes not equal to number of geometries [field name =" + name + "]"));
+      }
+      // std::cout << "Field " << name << " has a size of " << term->get_data_vec().size() << std::endl;
       //see if we need to rename this attribute
       auto search = output_attribute_names.find(name);
       if(search != output_attribute_names.end()) {
@@ -146,6 +153,9 @@ void OGRPostGISWriterNode::process()
     fcnt = layer->GetLayerDefn()->GetFieldCount();
     for (auto& term : poly_input("attributes").sub_terminals()) {
       std::string name = term->get_name();
+      if (geom_size != term->get_data_vec().size()) {
+        throw(gfException("Number of attributes not equal to number of geometries [field name =" + name + "]"));      }
+      // std::cout << "Field " << name << " has a size of " << term->get_data_vec().size() << std::endl;
       //see if we need to rename this attribute
       auto search = output_attribute_names.find(name);
       if(search != output_attribute_names.end()) {
