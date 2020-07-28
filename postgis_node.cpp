@@ -117,10 +117,10 @@ void OGRPostGISWriterNode::process()
     // Create GDAL feature attributes
     for (auto& term : poly_input("attributes").sub_terminals()) {
       std::string name = term->get_name();
+      std::cout << "Field " << name << " has a size of " << term->get_data_vec().size() << std::endl;
       if (geom_size != term->get_data_vec().size()) {
         throw(gfException("Number of attributes not equal to number of geometries [field name =" + name + "]"));
       }
-      // std::cout << "Field " << name << " has a size of " << term->get_data_vec().size() << std::endl;
       //see if we need to rename this attribute
       auto search = output_attribute_names.find(name);
       if(search != output_attribute_names.end()) {
@@ -153,9 +153,10 @@ void OGRPostGISWriterNode::process()
     fcnt = layer->GetLayerDefn()->GetFieldCount();
     for (auto& term : poly_input("attributes").sub_terminals()) {
       std::string name = term->get_name();
+      std::cout << "Field " << name << " has a size of " << term->get_data_vec().size() << std::endl;
       if (geom_size != term->get_data_vec().size()) {
-        throw(gfException("Number of attributes not equal to number of geometries [field name =" + name + "]"));      }
-      // std::cout << "Field " << name << " has a size of " << term->get_data_vec().size() << std::endl;
+        throw(gfException("Number of attributes not equal to number of geometries [field name =" + name + "]"));
+      }
       //see if we need to rename this attribute
       auto search = output_attribute_names.find(name);
       if(search != output_attribute_names.end()) {
@@ -262,6 +263,10 @@ void OGRPostGISWriterNode::process()
         throw(gfException("Starting database transaction failed.\n"));
       }
     }
+  }
+
+  if (dataSource->CommitTransaction() != OGRERR_NONE) {
+    throw(gfException("Committing features to database failed.\n"));
   }
 
   GDALClose(dataSource);
