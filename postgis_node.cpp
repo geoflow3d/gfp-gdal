@@ -90,7 +90,7 @@ void OGRPostGISWriterNode::process()
     wkbType = wkbPolygon;
   } else if (geom_term.is_connected_type(typeid(LineString))) {
     wkbType = wkbLineString25D;
-  } else if (geom_term.is_connected_type(typeid(TriangleCollection))) {
+  } else if (geom_term.is_connected_type(typeid(std::vector<TriangleCollection>))) {
     wkbType = wkbMultiPolygon25D;
   }
   
@@ -182,6 +182,8 @@ void OGRPostGISWriterNode::process()
   for (size_t i = 0; i != geom_term.size(); ++i) {
     OGRFeature* poFeature;
     poFeature = OGRFeature::CreateFeature(layer->GetLayerDefn());
+    // create a vec of features for the case where we write multiple feature rows (building with multiple parts)
+    std::vector<OGRFeature*> poFeatures;
     // Add the attributes to the feature
     for (auto& term : poly_input("attributes").sub_terminals()) {
       if (!term->get_data_vec()[i].has_value()) continue;
@@ -212,6 +214,7 @@ void OGRPostGISWriterNode::process()
         const LinearRing &lr = geom_term.get<LinearRing>(i);
         OGRPolygon ogrpoly = create_polygon(lr);
         poFeature->SetGeometry(&ogrpoly);
+        poFeatures.push_back(poFeature);
       } else if (geom_term.is_connected_type(typeid(LineString))) {
         OGRLineString ogrlinestring;
         const LineString &ls = geom_term.get<LineString>(i);
@@ -221,23 +224,31 @@ void OGRPostGISWriterNode::process()
                                  g[2] + (*manager.data_offset)[2]);
         }
         poFeature->SetGeometry(&ogrlinestring);
-      } else if (geom_term.is_connected_type(typeid(TriangleCollection))) {
+        poFeatures.push_back(poFeature);
+      } else if (geom_term.is_connected_type(typeid(std::vector<TriangleCollection>))) {
         OGRMultiPolygon ogrmultipoly = OGRMultiPolygon();
-        for (auto &triangle : geom_term.get<TriangleCollection>(i)) {
-          OGRPolygon ogrpoly = OGRPolygon();
-          OGRLinearRing ring = OGRLinearRing();
-          for (auto &vertex : triangle) {
-            ring.addPoint(vertex[0] + (*manager.data_offset)[0],
-                          vertex[1] + (*manager.data_offset)[1],
-                          vertex[2] + (*manager.data_offset)[2]);
+        auto& tcs = geom_term.get<std::vector<TriangleCollection>>(i);
+
+        for (auto& tc : tcs) {  
+          auto poFeature_ = poFeature->Clone();
+          for (auto &triangle : tc) {
+            OGRPolygon ogrpoly = OGRPolygon();
+            OGRLinearRing ring = OGRLinearRing();
+            for (auto &vertex : triangle) {
+              ring.addPoint(vertex[0] + (*manager.data_offset)[0],
+                            vertex[1] + (*manager.data_offset)[1],
+                            vertex[2] + (*manager.data_offset)[2]);
+            }
+            ring.closeRings();
+            ogrpoly.addRing(&ring);
+            if (ogrmultipoly.addGeometry(&ogrpoly) != OGRERR_NONE) {
+              printf("couldn't add triangle to MultiSurfaceZ");
+            }
           }
-          ring.closeRings();
-          ogrpoly.addRing(&ring);
-          if (ogrmultipoly.addGeometry(&ogrpoly) != OGRERR_NONE) {
-            printf("couldn't add triangle to MultiSurfaceZ");
-          }
+          poFeature_->SetGeometry(&ogrmultipoly);
+          poFeatures.push_back(poFeature_);
         }
-        poFeature->SetGeometry(&ogrmultipoly);
+        OGRFeature::DestroyFeature(poFeature);
       } else if (geom_term.is_connected_type(typeid(Mesh))) {
         auto &mesh = geom_term.get<Mesh>(i);
         OGRMultiPolygon ogrmultipoly = OGRMultiPolygon();
@@ -248,13 +259,17 @@ void OGRPostGISWriterNode::process()
           }
         }
         poFeature->SetGeometry(&ogrmultipoly);
+        poFeatures.push_back(poFeature);
       }
     }
 
-    if (layer->CreateFeature(poFeature) != OGRERR_NONE) {
-      throw(gfException("Failed to create feature in "+gdaldriver));
+    for (auto poFeat : poFeatures) {
+      if (layer->CreateFeature(poFeat) != OGRERR_NONE) {
+        throw(gfException("Failed to create feature in "+gdaldriver));
+      }
+      OGRFeature::DestroyFeature(poFeat);
     }
-    OGRFeature::DestroyFeature(poFeature);
+
     if (i % transaction_batch_size_ == 0) {
       if (dataSource->CommitTransaction() != OGRERR_NONE) {
         throw(gfException("Committing features to database failed.\n"));
