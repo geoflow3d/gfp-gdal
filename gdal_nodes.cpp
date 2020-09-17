@@ -38,14 +38,14 @@ void OGRLoaderNode::process()
 {
   GDALDatasetUniquePtr poDS(GDALDataset::Open(manager.substitute_globals(filepath).c_str(), GDAL_OF_VECTOR));
   if (poDS == nullptr)
-  {
-    std::cerr << "Open failed.\n";
-    return;
-  }
+    throw(gfException("Open failed on " + manager.substitute_globals(filepath)));
   layer_count = poDS->GetLayerCount();
   std::cout << "Layer count: " << layer_count << "\n";
-  if (layer_id < 0 || layer_id >= layer_count)
-    std::cout << "Illegal layer ID!";
+  if (layer_id >= layer_count) {
+    throw(gfException("Illegal layer ID! Layer ID must be less than the layer count."));
+  } else if (layer_id < 0) {
+    throw(gfException("Illegal layer ID! Layer ID cannot be negative."));
+  }
 
   // Set up vertex data (and buffer(s)) and attribute pointers
   // LineStringCollection line_strings;
@@ -55,6 +55,8 @@ void OGRLoaderNode::process()
 
   OGRLayer *poLayer;
   poLayer = poDS->GetLayer(layer_id);
+  if (poLayer == nullptr)
+    throw(gfException("Could not get the selected layer (ID): " + std::to_string(layer_id)));
   std::cout << "Layer " << layer_id << " feature count: " << poLayer->GetFeatureCount() << "\n";
   geometry_type = poLayer->GetGeomType();
   geometry_type_name = OGRGeometryTypeToName(geometry_type);
