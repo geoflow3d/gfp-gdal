@@ -90,7 +90,11 @@ void OGRPostGISWriterNode::process()
     wkbType = wkbPolygon;
   } else if (geom_term.is_connected_type(typeid(LineString))) {
     wkbType = wkbLineString25D;
-  } else if (geom_term.is_connected_type(typeid(std::vector<TriangleCollection>))) {
+  } else if (geom_term.is_connected_type(typeid(std::vector<TriangleCollection>)) || geom_term.is_connected_type(typeid(MultiTriangleCollection))) {
+    // Note that in case of a MultiTriangleCollection we actually write the
+    // TriangleCollections separately, and not the whole MultiTriangleCollection
+    // to a single feature. That's why a MultiPolygon and not an aggregate of
+    // multipolygons.
     wkbType = wkbMultiPolygon25D;
   }
   
@@ -145,6 +149,34 @@ void OGRPostGISWriterNode::process()
         create_field(layer, name, OFTString);
         attr_id_map[term->get_name()] = fcnt++;
       }
+      }
+    if (geom_term.is_connected_type(typeid(MultiTriangleCollection))) {
+      // TODO: Ideally we would handle the attributes of all geometry types the same way and wouldn't need to do cases like this one.
+      // A MultiTriangleCollection stores the attributes with itself
+      if (geom_term.has_data() && geom_term.get<MultiTriangleCollection>(0).has_attributes()) {
+        auto& mtc = geom_term.get<MultiTriangleCollection>(0);
+        // Get the AttributeMap of the first TriangleCollection. We expect
+        // here that each TriangleCollection has the same attributes.
+        AttributeMap attr_map = mtc.get_attributes()[0];
+        for (const auto& a : attr_map) {
+          // TODO: since we have a variant here, in case the first value is empty I don't know what to do
+          std::string k = a.first;
+          if (!a.second.empty()) {
+            attribute_value v = a.second[0];
+            if (std::holds_alternative<int>(v))
+              create_field(layer, (std::string&)k, OFTInteger64List);
+            else if (std::holds_alternative<float>(v))
+              create_field(layer, (std::string&)k, OFTRealList);
+            else if (std::holds_alternative<std::string>(v))
+              create_field(layer, (std::string&)k, OFTStringList);
+            else if (std::holds_alternative<bool>(v)) {
+              // There is no BooleanList, so they are written as integers
+              create_field(layer, (std::string&)k, OFTIntegerList);
+            }
+          }
+          attr_id_map[k] = fcnt++;
+        }
+      }
     }
   } else {
     // Fields already exist, so we need to map the poly_input("attributes")
@@ -169,6 +201,17 @@ void OGRPostGISWriterNode::process()
         auto fdef = layer->GetLayerDefn()->GetFieldDefn(i);
         if (strcmp(fdef->GetNameRef(), name.c_str()) == 0)
           attr_id_map[term->get_name()] = i;
+      }
+    }
+    if (geom_term.is_connected_type(typeid(MultiTriangleCollection))) {
+      for (int i=0; i < fcnt; i++) {
+        auto fdef = layer->GetLayerDefn()->GetFieldDefn(i);
+        auto& mtc = geom_term.get<MultiTriangleCollection>(0);
+        AttributeMap attr_map = mtc.get_attributes()[0];
+        for (const auto& a : attr_map) {
+          if (strcmp(fdef->GetNameRef(), a.first.c_str()) == 0)
+            attr_id_map[a.first] = i;
+        }
       }
     }
   }
@@ -249,6 +292,75 @@ void OGRPostGISWriterNode::process()
           poFeatures.push_back(poFeature_);
         }
         OGRFeature::DestroyFeature(poFeature);
+      } else if (geom_term.is_connected_type(typeid(MultiTriangleCollection))) {
+        OGRMultiPolygon ogrmultipoly = OGRMultiPolygon();
+        auto&           mtcs = geom_term.get<MultiTriangleCollection>(i);
+
+        for (size_t j=0; j<mtcs.tri_size(); j++) {
+          const auto& tc = mtcs.tri_at(j);
+          auto poFeature_ = poFeature->Clone();
+          for (auto& triangle : tc) {
+            OGRPolygon    ogrpoly = OGRPolygon();
+            OGRLinearRing ring    = OGRLinearRing();
+            for (auto& vertex : triangle) {
+              ring.addPoint(vertex[0] + (*manager.data_offset)[0],
+                            vertex[1] + (*manager.data_offset)[1],
+                            vertex[2] + (*manager.data_offset)[2]);
+            }
+            ring.closeRings();
+            ogrpoly.addRing(&ring);
+            if (ogrmultipoly.addGeometry(&ogrpoly) != OGRERR_NONE) {
+              printf("couldn't add triangle to MultiSurfaceZ");
+            }
+          }
+          poFeature_->SetGeometry(&ogrmultipoly);
+          if (mtcs.has_attributes()) {
+            for (const auto& attr_map : mtcs.attr_at(j)) {
+              if (attr_map.second.empty()) poFeature_->SetFieldNull(attr_id_map[attr_map.first]);
+              else {
+                // Since the 'attribute_value' type is a 'variant' and therefore
+                // the 'attr_map' AttributeMap is a vector of variants, the
+                // SetField method does not recognize the data type stored
+                // within the variant. So it doesn't write the values unless we
+                // put the values into an array with an explicit type. I tried
+                // passing attr_map.second.data() to SetField but doesn't work.
+                attribute_value v = attr_map.second[0];
+                if (std::holds_alternative<int>(v)) {
+                  int val[attr_map.second.size()];
+                  for (size_t h=0; h<attr_map.second.size(); h++) {
+                    val[h] = std::get<int>(attr_map.second[h]);
+                  }
+                  poFeature_->SetField(attr_id_map[attr_map.first], attr_map.second.size(), val);
+                }
+                else if (std::holds_alternative<float>(v)) {
+                  float val[attr_map.second.size()];
+                  for (size_t h=0; h<attr_map.second.size(); h++) {
+                    val[h] = std::get<float>(attr_map.second[h]);
+                  }
+                  poFeature_->SetField(attr_id_map[attr_map.first], attr_map.second.size(), val);
+                }
+                else if (std::holds_alternative<std::string>(v)) {
+                  // FIXME: needs to align the character encoding with the encoding of the database, otherwise will throw an 'ERROR:  invalid byte sequence for encoding ...'
+//                  const char* val[attr_map.second.size()];
+//                  for (size_t h=0; h<attr_map.second.size(); h++) {
+//                    val[h] = std::get<std::string>(attr_map.second[h]).c_str();
+//                  }
+//                  poFeature_->SetField(attr_id_map[attr_map.first], attr_map.second.size(), val);
+                }
+                else if (std::holds_alternative<bool>(v)) {
+                  int val[attr_map.second.size()];
+                  for (size_t h=0; h<attr_map.second.size(); h++) {
+                    val[h] = std::get<bool>(attr_map.second[h]);
+                  }
+                  poFeature_->SetField(attr_id_map[attr_map.first], attr_map.second.size(), val);
+                }
+                else throw(gfException("Unsupported attribute value type for: " + attr_map.first));
+              }
+            }
+          }
+          poFeatures.push_back(poFeature_);
+        }
+        OGRFeature::DestroyFeature(poFeature);
       } else if (geom_term.is_connected_type(typeid(Mesh))) {
         auto &mesh = geom_term.get<Mesh>(i);
         OGRMultiPolygon ogrmultipoly = OGRMultiPolygon();
@@ -260,6 +372,8 @@ void OGRPostGISWriterNode::process()
         }
         poFeature->SetGeometry(&ogrmultipoly);
         poFeatures.push_back(poFeature);
+      } else {
+        std::cerr << "Unsupported type of input geometry " << geom_term.get_connected_type().name() << std::endl;
       }
     }
 

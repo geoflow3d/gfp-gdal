@@ -103,7 +103,7 @@ public:
   using Node::Node;
   void init()
   {
-    add_vector_input("geometries", {typeid(LineString), typeid(LinearRing), typeid(std::vector<TriangleCollection>), typeid(Mesh)});
+    add_vector_input("geometries", {typeid(LineString), typeid(LinearRing), typeid(std::vector<TriangleCollection>), typeid(MultiTriangleCollection), typeid(Mesh)});
     add_poly_input("attributes", {typeid(bool), typeid(int), typeid(float), typeid(std::string)}, false);
 
     add_param(ParamPath(conn_string_, "filepath", "Connection string"));
