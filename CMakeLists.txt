@@ -17,7 +17,7 @@ include_directories(${GDAL_INCLUDE_DIR})
 set(GF_PLUGIN_NAME ${PROJECT_NAME})
 set(GF_PLUGIN_TARGET_NAME "gfp_gdal")
 set(GF_PLUGIN_REGISTER ${PROJECT_SOURCE_DIR}/register.hpp)
-geoflow_create_plugin(gdal_nodes.cpp postgis_node.cpp)
+geoflow_create_plugin(gdal_nodes.cpp geos_nodes.cpp postgis_node.cpp)
 
 target_link_libraries( gfp_gdal
   geoflow-core
