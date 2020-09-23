@@ -31,7 +31,6 @@ namespace geoflow::nodes::gfp_geos {
 
         GEOSGeometry *g_exterior = nullptr;
         to_geos_linear_ring(lr, g_exterior);
-        printf("%s\n", GEOSGeomToWKT_r(gc, g_exterior));
 
         std::vector<GEOSGeometry *> g_holes;
         for (auto& hole : lr.interior_rings()) {
