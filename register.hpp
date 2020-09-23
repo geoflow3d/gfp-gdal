@@ -13,7 +13,7 @@ void register_nodes(geoflow::NodeRegister &node_register)
   node_register.register_node<CSVLoaderNode>("CSVLoader");
   node_register.register_node<CSVWriterNode>("CSVWriter");
   
-  // node_register.register_node<GEOSMergeLinesNode>("GEOSMergeLines");
+  node_register.register_node<GEOSMergeLinesNode>("GEOSMergeLines");
   node_register.register_node<PolygonBufferGEOSNode>("PolygonBufferGEOS");
   node_register.register_node<PolygonSimplifyGEOSNode>("PolygonSimplifyGEOS");
 }

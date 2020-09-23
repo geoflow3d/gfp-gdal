@@ -156,16 +156,4 @@ public:
   void process();
 };
 
-class GEOSMergeLinesNode : public Node
-{
-public:
-  using Node::Node;
-  void init()
-  {
-    add_input("lines", typeid(LineStringCollection));
-    add_output("lines", typeid(LineStringCollection));
-  }
-  void process();
-};
-
 } // namespace geoflow::nodes::gdal
