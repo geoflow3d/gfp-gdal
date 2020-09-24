@@ -333,9 +333,9 @@ void OGRPostGISWriterNode::process()
                   poFeature_->SetField(attr_id_map[attr_map.first], attr_map.second.size(), val);
                 }
                 else if (std::holds_alternative<float>(v)) {
-                  float val[attr_map.second.size()];
+                  double val[attr_map.second.size()];
                   for (size_t h=0; h<attr_map.second.size(); h++) {
-                    val[h] = std::get<float>(attr_map.second[h]);
+                    val[h] = (double) std::get<float>(attr_map.second[h]);
                   }
                   poFeature_->SetField(attr_id_map[attr_map.first], attr_map.second.size(), val);
                 }
