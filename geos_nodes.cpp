@@ -46,15 +46,16 @@ namespace geoflow::nodes::gfp_geos {
 
     template<typename T> void from_geos_linear_ring(const GEOSGeometry* g_lin_ring, T& gf_ring) {
         const GEOSCoordSequence* g_coord_seq = GEOSGeom_getCoordSeq_r(gc, g_lin_ring);
-        unsigned int size;
+        unsigned int size, dims;
         GEOSCoordSeq_getSize_r(gc, g_coord_seq, &size);
+        GEOSCoordSeq_getDimensions_r(gc, g_coord_seq, &dims);
 
         // note we do not repeat the first coordinate
         for (size_t i = 0; i < (size-1); ++i) {
             double x, y, z = 0;
             GEOSCoordSeq_getX_r(gc, g_coord_seq, i, &x);
             GEOSCoordSeq_getY_r(gc, g_coord_seq, i, &y);
-            GEOSCoordSeq_getZ_r(gc, g_coord_seq, i, &z);
+            if (dims==3) GEOSCoordSeq_getZ_r(gc, g_coord_seq, i, &z);
             gf_ring.push_back({float(x),float(y),float(z)});
         }
     }
