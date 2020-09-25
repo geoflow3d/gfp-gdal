@@ -65,9 +65,9 @@ namespace geoflow::nodes::gfp_geos {
         const GEOSGeometry* g_ring = GEOSGetExteriorRing_r(gc, g_polygon);
         from_geos_linear_ring(g_ring, lr);
         for (size_t i=0; i<GEOSGetNumInteriorRings_r(gc, g_polygon); ++i) {
-            auto g_iring = GEOSGetInteriorRingN_r(gc, g_polygon, i);
+            const GEOSGeometry* g_iring = GEOSGetInteriorRingN_r(gc, g_polygon, i);
             vec3f hole;
-            from_geos_linear_ring(g_ring, hole);
+            from_geos_linear_ring(g_iring, hole);
             lr.interior_rings().push_back(hole);
         }
         return lr;
