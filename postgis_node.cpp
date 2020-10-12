@@ -326,18 +326,18 @@ void OGRPostGISWriterNode::process()
                 // passing attr_map.second.data() to SetField but doesn't work.
                 attribute_value v = attr_map.second[0];
                 if (std::holds_alternative<int>(v)) {
-                  int val[attr_map.second.size()];
+                  std::vector<int> val(attr_map.second.size());
                   for (size_t h=0; h<attr_map.second.size(); h++) {
                     val[h] = std::get<int>(attr_map.second[h]);
                   }
-                  poFeature_->SetField(attr_id_map[attr_map.first], attr_map.second.size(), val);
+                  poFeature_->SetField(attr_id_map[attr_map.first], attr_map.second.size(), val.data());
                 }
                 else if (std::holds_alternative<float>(v)) {
-                  double val[attr_map.second.size()];
+                  std::vector<double> val(attr_map.second.size());
                   for (size_t h=0; h<attr_map.second.size(); h++) {
                     val[h] = (double) std::get<float>(attr_map.second[h]);
                   }
-                  poFeature_->SetField(attr_id_map[attr_map.first], attr_map.second.size(), val);
+                  poFeature_->SetField(attr_id_map[attr_map.first], attr_map.second.size(), val.data());
                 }
                 else if (std::holds_alternative<std::string>(v)) {
                   // FIXME: needs to align the character encoding with the encoding of the database, otherwise will throw an 'ERROR:  invalid byte sequence for encoding ...'
@@ -348,11 +348,11 @@ void OGRPostGISWriterNode::process()
 //                  poFeature_->SetField(attr_id_map[attr_map.first], attr_map.second.size(), val);
                 }
                 else if (std::holds_alternative<bool>(v)) {
-                  int val[attr_map.second.size()];
+                  std::vector<int> val(attr_map.second.size());
                   for (size_t h=0; h<attr_map.second.size(); h++) {
                     val[h] = std::get<bool>(attr_map.second[h]);
                   }
-                  poFeature_->SetField(attr_id_map[attr_map.first], attr_map.second.size(), val);
+                  poFeature_->SetField(attr_id_map[attr_map.first], attr_map.second.size(), val.data());
                 }
                 else throw(gfException("Unsupported attribute value type for: " + attr_map.first));
               }
