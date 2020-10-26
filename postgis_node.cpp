@@ -9,7 +9,7 @@
 namespace geoflow::nodes::gdal
 {
 
-inline void create_field(OGRLayer* layer, std::string& name, OGRFieldType field_type) {
+inline void create_field(OGRLayer* layer, const std::string& name, OGRFieldType field_type) {
   OGRFieldDefn oField(name.c_str(), field_type);
   if (layer->CreateField(&oField) != OGRERR_NONE) {
     throw(gfException("Creating field failed"));
@@ -153,30 +153,36 @@ void OGRPostGISWriterNode::process()
     if (geom_term.is_connected_type(typeid(MultiTriangleCollection))) {
       // TODO: Ideally we would handle the attributes of all geometry types the same way and wouldn't need to do cases like this one.
       // A MultiTriangleCollection stores the attributes with itself
-      if (geom_term.has_data() && geom_term.get<MultiTriangleCollection>(0).has_attributes()) {
-        auto& mtc = geom_term.get<MultiTriangleCollection>(0);
-        // Get the AttributeMap of the first TriangleCollection. We expect
-        // here that each TriangleCollection has the same attributes.
-        AttributeMap attr_map = mtc.get_attributes()[0];
-        for (const auto& a : attr_map) {
-          // TODO: since we have a variant here, in case the first value is empty I don't know what to do
-          std::string k = a.first;
-          if (!a.second.empty()) {
-            attribute_value v = a.second[0];
-            if (std::holds_alternative<int>(v))
-              create_field(layer, (std::string&)k, OFTInteger64List);
-            else if (std::holds_alternative<float>(v))
-              create_field(layer, (std::string&)k, OFTRealList);
-            else if (std::holds_alternative<std::string>(v))
-              create_field(layer, (std::string&)k, OFTStringList);
-            else if (std::holds_alternative<bool>(v)) {
-              // There is no BooleanList, so they are written as integers
-              create_field(layer, (std::string&)k, OFTIntegerList);
-            }
-          }
-          attr_id_map[k] = fcnt++;
-        }
-      }
+      // if (geom_term.has_data()) 
+      //   if (!geom_term.get_data_vec()[0].has_value()) std::cout << 
+      //     if (geom_term.get<MultiTriangleCollection>(0).has_attributes()) {
+
+      //   auto& mtc = geom_term.get<MultiTriangleCollection>(0);
+      //   // Get the AttributeMap of the first TriangleCollection. We expect
+      //   // here that each TriangleCollection has the same attributes.
+      //   AttributeMap attr_map = mtc.get_attributes()[0];
+      //   for (const auto& a : attr_map) {
+      //     // TODO: since we have a variant here, in case the first value is empty I don't know what to do
+      //     std::string k = a.first;
+      //     if (!a.second.empty()) {
+      //       attribute_value v = a.second[0];
+      //       if (std::holds_alternative<int>(v))
+      //         create_field(layer, (std::string&)k, OFTInteger64List);
+      //       else if (std::holds_alternative<float>(v))
+      //         create_field(layer, (std::string&)k, OFTRealList);
+      //       else if (std::holds_alternative<std::string>(v))
+      //         create_field(layer, (std::string&)k, OFTStringList);
+      //       else if (std::holds_alternative<bool>(v)) {
+      //         // There is no BooleanList, so they are written as integers
+      //         create_field(layer, (std::string&)k, OFTIntegerList);
+      //       }
+      //     }
+      //     attr_id_map[k] = fcnt++;
+      //   }
+      // }
+      const std::string labels = "labels";
+      create_field(layer, labels, OFTIntegerList);
+      attr_id_map[labels] = fcnt++;
     }
   } else {
     // Fields already exist, so we need to map the poly_input("attributes")
