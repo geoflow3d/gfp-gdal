@@ -89,11 +89,16 @@ namespace geoflow::nodes::gfp_geos {
 
             if(GEOSisValid_r(gc, g_polygon)!=1) {
                 std::cout << "feature not simplified\n";
-            } 
+            }
 
             GEOSGeometry* simplified_geom = GEOSSimplify_r(gc, g_polygon, double(tolerance));
 
-            if(GEOSisValid_r(gc, simplified_geom)!=1) {
+            // check if the simplified geometry is valid and has vertices
+            unsigned int size;
+            const GEOSGeometry* g_ring = GEOSGetExteriorRing_r(gc, simplified_geom);
+            const GEOSCoordSequence* g_coord_seq = GEOSGeom_getCoordSeq_r(gc, g_ring);
+            GEOSCoordSeq_getSize_r(gc, g_coord_seq, &size);
+            if(GEOSisValid_r(gc, simplified_geom)!=1 || size == 0) {
                 std::cout << "feature not simplified\n";
                 opolygons.push_back(lr);
             } else {
