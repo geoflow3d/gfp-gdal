@@ -212,12 +212,14 @@ void OGRPostGISWriterNode::process()
     if (geom_term.is_connected_type(typeid(MultiTriangleCollection))) {
       for (int i=0; i < fcnt; i++) {
         auto fdef = layer->GetLayerDefn()->GetFieldDefn(i);
-        auto& mtc = geom_term.get<MultiTriangleCollection>(0);
-        AttributeMap attr_map = mtc.get_attributes()[0];
-        for (const auto& a : attr_map) {
-          if (strcmp(fdef->GetNameRef(), a.first.c_str()) == 0)
-            attr_id_map[a.first] = i;
-        }
+//        auto& mtc = geom_term.get<MultiTriangleCollection>(0);
+//        AttributeMap attr_map = mtc.get_attributes()[0];
+//        for (const auto& a : attr_map) {
+//          if (strcmp(fdef->GetNameRef(), a.first.c_str()) == 0)
+//            attr_id_map[a.first] = i;
+//        }
+        if (strcmp(fdef->GetNameRef(), "labels") == 0)
+          attr_id_map["labels"] = i;
       }
     }
   }
