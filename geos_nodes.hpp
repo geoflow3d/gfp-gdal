@@ -31,6 +31,20 @@ class PolygonBufferGEOSNode:public Node {
   void process();
 };
 
+// class PolygonOrientNode:public Node {
+//   public:
+//   using Node::Node;
+//   bool make_ccw = true;
+
+//   void init() {
+//     add_vector_input("polygons", typeid(LinearRing));
+//     add_vector_output("offset_polygons", typeid(LinearRing));
+
+//     add_param(ParamBool(make_ccw, "make_ccw",  "orient CCW (CW if false)"));   
+//   }
+//   void process();
+// };
+
 class GEOSMergeLinesNode : public Node
 {
 public:

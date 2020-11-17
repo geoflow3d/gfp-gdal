@@ -7,6 +7,8 @@ namespace geoflow::nodes::gfp_geos {
 
     GEOSContextHandle_t gc;
 
+    enum ORIENTATION {CW, CCW, DONTCARE};
+
     void print_geos_message(const char * message, ...) {
         std::cerr << message << std::endl;
     }
@@ -25,6 +27,17 @@ namespace geoflow::nodes::gfp_geos {
         GEOSCoordSeq_setZ_r(gc, g_coord_seq, size, lr[0][2]);
 
         g_lr = GEOSGeom_createLinearRing_r(gc, g_coord_seq);
+        GEOSGeometry *g_lr_ = nullptr;
+
+        // check and fix orientation if needed
+        // char is_ccw;
+        // GEOSCoordSeq_isCCW_r(gc, g_coord_seq, &is_ccw);
+        // if ((is_ccw==1 && !output_ccw) || (is_ccw==0 && output_ccw)) {
+        //     g_lr_ = GEOSReverse_r(gc, g_lr);
+        //     GEOSGeom_destroy_r(gc, g_lr);
+        //     g_lr = g_lr_;
+        // }
+        
     }
 
     void to_geos_polygon(const LinearRing& lr, GEOSGeometry *& g_polygon) {
@@ -78,8 +91,8 @@ namespace geoflow::nodes::gfp_geos {
         auto& opolygons = vector_output("simplified_polygons");
         
         gc = GEOS_init_r();
-        GEOSContext_setNoticeHandler_r(gc, print_geos_message);
-        GEOSContext_setErrorHandler_r(gc, print_geos_message);
+        // GEOSContext_setNoticeHandler_r(gc, print_geos_message);
+        // GEOSContext_setErrorHandler_r(gc, print_geos_message);
 
         for (size_t i=0; i<ipolygons.size(); ++i) {
             auto& lr = ipolygons.get<LinearRing>(i);
@@ -138,6 +151,24 @@ namespace geoflow::nodes::gfp_geos {
         GEOS_finish_r(gc);
     }
 
+    // void PolygonOrientNode::process() {
+    //     auto& ipolygons = vector_input("polygons");
+    //     auto& opolygons = vector_output("offset_polygons");
+        
+    //     gc = GEOS_init_r();
+
+    //     for (size_t i=0; i<ipolygons.size(); ++i) {
+    //         auto& lr = ipolygons.get<LinearRing>(i);
+            
+    //         GEOSGeometry* g_polygon = nullptr;
+    //         to_geos_polygon(lr, g_polygon, make_ccw);
+
+    //         opolygons.push_back( from_geos_polygon(g_polygon) );
+
+    //         GEOSGeom_destroy_r(gc, g_polygon);
+    //     }
+    //     GEOS_finish_r(gc);
+    // }
 
     void GEOSMergeLinesNode::process()
     {

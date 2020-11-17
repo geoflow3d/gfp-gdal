@@ -16,4 +16,5 @@ void register_nodes(geoflow::NodeRegister &node_register)
   node_register.register_node<GEOSMergeLinesNode>("GEOSMergeLines");
   node_register.register_node<PolygonBufferGEOSNode>("PolygonBufferGEOS");
   node_register.register_node<PolygonSimplifyGEOSNode>("PolygonSimplifyGEOS");
+  // node_register.register_node<PolygonOrientNode>("PolygonOrient");
 }

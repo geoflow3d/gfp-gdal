@@ -134,9 +134,15 @@ void OGRLoaderNode::process()
         LinearRing gf_polygon;
         // for(auto& poPoint : poPolygon->getExteriorRing()) {
         OGRPoint poPoint;
-        for (size_t i = 0; i < poPolygon->getExteriorRing()->getNumPoints() - 1; ++i)
+        auto ogr_ering = poPolygon->getExteriorRing();
+        
+        // ensure we output ccw exterior ring
+        if ( ogr_ering->isClockwise() ) {
+          ogr_ering->reverseWindingOrder();
+        }
+        for (size_t i = 0; i < ogr_ering->getNumPoints() - 1; ++i)
         {
-          poPolygon->getExteriorRing()->getPoint(i, &poPoint);
+          ogr_ering->getPoint(i, &poPoint);
           if (!found_offset)
           {
             manager.data_offset = {poPoint.getX(), poPoint.getY(), 0};
@@ -149,6 +155,10 @@ void OGRLoaderNode::process()
         for (size_t i = 0; i < poPolygon->getNumInteriorRings(); ++i) 
         {
           auto ogr_iring = poPolygon->getInteriorRing(i);
+          // ensure we output cw interior ring
+          if ( !ogr_ering->isClockwise() ) {
+            ogr_ering->reverseWindingOrder();
+          }
           vec3f gf_iring;
           for (size_t j = 0; j < ogr_iring->getNumPoints() - 1; ++j)
           {
