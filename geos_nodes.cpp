@@ -7,10 +7,48 @@ namespace geoflow::nodes::gfp_geos {
 
     GEOSContextHandle_t gc;
 
-    enum ORIENTATION {CW, CCW, DONTCARE};
+    enum ORIENTATION {CW, CCW};
 
     void print_geos_message(const char * message, ...) {
         std::cerr << message << std::endl;
+    }
+
+    GEOSGeometry* orient_ring(const GEOSGeometry *& g_ring, ORIENTATION orientation) {
+        const GEOSCoordSequence* g_coord_seq = GEOSGeom_getCoordSeq_r(gc, g_ring);
+        char is_ccw;
+        GEOSCoordSeq_isCCW_r(gc, g_coord_seq, &is_ccw);
+        if( (is_ccw==1 && orientation==CW) || (is_ccw==0 && orientation==CCW) ) {
+            return GEOSReverse_r(gc, g_ring);
+        }
+        return nullptr;
+    }
+    bool orient_polygon(GEOSGeometry *& g_polygon, ORIENTATION orientation) {
+        const GEOSGeometry* g_ring = GEOSGetExteriorRing_r(gc, g_polygon);
+        GEOSGeometry* g_ring_ = orient_ring(g_ring, orientation);
+        bool reversed = false;
+        if (!g_ring_) {
+            g_ring_ = GEOSGeom_clone_r(gc, g_ring);
+        } else {
+            reversed = true ;
+        }
+
+        ORIENTATION orientation_int = (orientation == CCW) ? CW : CCW;
+        std::vector<GEOSGeometry *> g_holes;
+        for (size_t i=0; i<GEOSGetNumInteriorRings_r(gc, g_polygon); ++i) {
+            const GEOSGeometry* g_iring = GEOSGetInteriorRingN_r(gc, g_polygon, i);
+            GEOSGeometry* g_iring_ = orient_ring(g_iring, orientation_int);
+            if(g_iring_) {
+                g_holes.push_back(g_iring_);
+                reversed |= reversed;
+            } else {
+                g_holes.push_back( GEOSGeom_clone_r(gc, g_iring) );
+            }
+        }
+
+        GEOSGeom_destroy_r(gc, g_polygon);
+        g_polygon = GEOSGeom_createPolygon_r(gc, g_ring_, g_holes.data(), g_holes.size());
+
+        return reversed;
     }
 
     template<typename T> void to_geos_linear_ring(const T& lr, GEOSGeometry *& g_lr) {
@@ -28,15 +66,6 @@ namespace geoflow::nodes::gfp_geos {
 
         g_lr = GEOSGeom_createLinearRing_r(gc, g_coord_seq);
         GEOSGeometry *g_lr_ = nullptr;
-
-        // check and fix orientation if needed
-        // char is_ccw;
-        // GEOSCoordSeq_isCCW_r(gc, g_coord_seq, &is_ccw);
-        // if ((is_ccw==1 && !output_ccw) || (is_ccw==0 && output_ccw)) {
-        //     g_lr_ = GEOSReverse_r(gc, g_lr);
-        //     GEOSGeom_destroy_r(gc, g_lr);
-        //     g_lr = g_lr_;
-        // }
         
     }
 
@@ -105,6 +134,9 @@ namespace geoflow::nodes::gfp_geos {
             }
 
             GEOSGeometry* simplified_geom = GEOSSimplify_r(gc, g_polygon, double(tolerance));
+            if (orient_polygon(simplified_geom, CCW)) {
+                std::cout << "reversed orientation\n";
+            }
 
             // check if the simplified geometry is valid and has vertices
             unsigned int size;
@@ -119,7 +151,7 @@ namespace geoflow::nodes::gfp_geos {
             }
 
             GEOSGeom_destroy_r(gc, g_polygon);
-            GEOSGeom_destroy_r(gc, simplified_geom);
+            // GEOSGeom_destroy_r(gc, simplified_geom);
         }
         GEOS_finish_r(gc);
     }
@@ -137,6 +169,9 @@ namespace geoflow::nodes::gfp_geos {
             to_geos_polygon(lr, g_polygon);
 
             GEOSGeometry* buffered_geom = GEOSBuffer_r(gc, g_polygon, double(offset), 8);
+            if (orient_polygon(buffered_geom, CCW)) {
+                std::cout << "reversed orientation\n";
+            }
 
             if(GEOSisValid_r(gc, buffered_geom)!=1) {
                 std::cout << "feature not simplified\n";

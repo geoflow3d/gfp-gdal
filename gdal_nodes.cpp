@@ -156,8 +156,8 @@ void OGRLoaderNode::process()
         {
           auto ogr_iring = poPolygon->getInteriorRing(i);
           // ensure we output cw interior ring
-          if ( !ogr_ering->isClockwise() ) {
-            ogr_ering->reverseWindingOrder();
+          if ( !ogr_iring->isClockwise() ) {
+            ogr_iring->reverseWindingOrder();
           }
           vec3f gf_iring;
           for (size_t j = 0; j < ogr_iring->getNumPoints() - 1; ++j)
