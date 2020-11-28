@@ -52,6 +52,9 @@ void OGRLoaderNode::process()
   // LinearRingCollection linear_rings;
   auto &linear_rings = vector_output("linear_rings");
   auto &line_strings = vector_output("line_strings");
+  
+  auto &is_valid = vector_output("is_valid");
+  auto &area = vector_output("area");
 
   OGRLayer *poLayer;
   poLayer = poDS->GetLayer(layer_id);
@@ -124,6 +127,7 @@ void OGRLoaderNode::process()
           line_string.push_back(p);
         }
         line_strings.push_back(line_string);
+        is_valid.push_back(bool(poGeometry->IsValid()));
 
         push_attributes(*poFeature);
       }
@@ -179,6 +183,9 @@ void OGRLoaderNode::process()
         //   ring_dedup.push_back({float(bg::get<0>(p)), float(bg::get<1>(p)), float(bg::get<2>(p))}); //FIXME losing potential z...
         // }
         linear_rings.push_back(gf_polygon);
+        
+        area.push_back(float(poPolygon->get_Area()));
+        is_valid.push_back(bool(poPolygon->IsValid()));
 
         push_attributes(*poFeature);
       }

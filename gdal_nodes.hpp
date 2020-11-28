@@ -25,6 +25,9 @@ public:
     add_vector_output("line_strings", typeid(LineString));
     add_vector_output("linear_rings", typeid(LinearRing));
 
+    add_vector_output("area", typeid(float));
+    add_vector_output("is_valid", typeid(bool));
+
     add_poly_output("attributes", {typeid(bool), typeid(int), typeid(float), typeid(std::string)});
 
     add_param(ParamPath(filepath, "filepath", "File path"));
