@@ -134,9 +134,7 @@ namespace geoflow::nodes::gfp_geos {
             }
 
             GEOSGeometry* simplified_geom = GEOSSimplify_r(gc, g_polygon, double(tolerance));
-            if (orient_polygon(simplified_geom, CCW)) {
-                std::cout << "reversed orientation\n";
-            }
+            orient_polygon(simplified_geom, CCW);
 
             // check if the simplified geometry is valid and has vertices
             unsigned int size;
@@ -169,9 +167,7 @@ namespace geoflow::nodes::gfp_geos {
             to_geos_polygon(lr, g_polygon);
 
             GEOSGeometry* buffered_geom = GEOSBuffer_r(gc, g_polygon, double(offset), 8);
-            if (orient_polygon(buffered_geom, CCW)) {
-                std::cout << "reversed orientation\n";
-            }
+            orient_polygon(buffered_geom, CCW);
 
             if(GEOSisValid_r(gc, buffered_geom)!=1) {
                 std::cout << "feature not simplified\n";
