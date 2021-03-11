@@ -301,12 +301,14 @@ void OGRPostGISWriterNode::process()
         }
         OGRFeature::DestroyFeature(poFeature);
       } else if (geom_term.is_connected_type(typeid(MultiTriangleCollection))) {
-        OGRMultiPolygon ogrmultipoly = OGRMultiPolygon();
         auto&           mtcs = geom_term.get<MultiTriangleCollection>(i);
 
         for (size_t j=0; j<mtcs.tri_size(); j++) {
           const auto& tc = mtcs.tri_at(j);
           auto poFeature_ = poFeature->Clone();
+
+          // create an empty multipolygon for this TriangleCollection
+          OGRMultiPolygon ogrmultipoly = OGRMultiPolygon();
           for (auto& triangle : tc) {
             OGRPolygon    ogrpoly = OGRPolygon();
             OGRLinearRing ring    = OGRLinearRing();
