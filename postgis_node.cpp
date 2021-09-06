@@ -96,6 +96,8 @@ void OGRPostGISWriterNode::process()
     // to a single feature. That's why a MultiPolygon and not an aggregate of
     // multipolygons.
     wkbType = wkbMultiPolygon25D;
+  } else if (geom_term.is_connected_type(typeid(std::unordered_map<int, Mesh>))) {
+    wkbType = wkbMultiPolygon25D;
   }
   
   std::unordered_map<std::string, size_t> attr_id_map;
@@ -320,7 +322,7 @@ void OGRPostGISWriterNode::process()
             ring.closeRings();
             ogrpoly.addRing(&ring);
             if (ogrmultipoly.addGeometry(&ogrpoly) != OGRERR_NONE) {
-              printf("couldn't add triangle to MultiSurfaceZ");
+              printf("couldn't add triangle to MultiPolygonZ");
             }
           }
           poFeature_->SetGeometry(&ogrmultipoly);
@@ -372,9 +374,9 @@ void OGRPostGISWriterNode::process()
         }
         OGRFeature::DestroyFeature(poFeature);
       } else if (geom_term.is_connected_type(typeid(Mesh))) {
-        auto &mesh = geom_term.get<Mesh>(i);
+        auto&           mesh         = geom_term.get<Mesh>(i);
         OGRMultiPolygon ogrmultipoly = OGRMultiPolygon();
-        for (auto &poly : mesh.get_polygons()) {
+        for (auto& poly : mesh.get_polygons()) {
           auto ogrpoly = create_polygon(poly);
           if (ogrmultipoly.addGeometry(&ogrpoly) != OGRERR_NONE) {
             printf("couldn't add polygon to MultiPolygon");
@@ -382,6 +384,25 @@ void OGRPostGISWriterNode::process()
         }
         poFeature->SetGeometry(&ogrmultipoly);
         poFeatures.push_back(poFeature);
+      } else if (geom_term.is_connected_type(typeid(std::unordered_map<int, Mesh>))) {
+        const auto& meshes = geom_term.get<std::unordered_map<int, Mesh>>(i);
+
+        for ( const auto& [mid, mesh] : geom_term.get<std::unordered_map<int, Mesh>>(i) ) {
+          auto poFeature_ = poFeature->Clone();
+          auto bp_id = std::to_string(mid);
+
+          OGRMultiPolygon ogrmultipoly = OGRMultiPolygon();
+          for (auto& poly : mesh.get_polygons()) {
+            auto ogrpoly = create_polygon(poly);
+            if (ogrmultipoly.addGeometry(&ogrpoly) != OGRERR_NONE) {
+              printf("couldn't add polygon to MultiPolygonZ");
+            }
+          }
+
+          poFeature_->SetGeometry(&ogrmultipoly);
+          poFeatures.push_back(poFeature_);
+        }
+        OGRFeature::DestroyFeature(poFeature);
       } else {
         std::cerr << "Unsupported type of input geometry " << geom_term.get_connected_type().name() << std::endl;
       }
