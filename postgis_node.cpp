@@ -152,7 +152,7 @@ void OGRPostGISWriterNode::process()
         attr_id_map[term->get_name()] = fcnt++;
       }
       }
-    if (geom_term.is_connected_type(typeid(MultiTriangleCollection))) {
+    if (geom_term.is_connected_type(typeid(MultiTriangleCollection)) || geom_term.is_connected_type(typeid(std::unordered_map<int, Mesh>))) {
       // TODO: Ideally we would handle the attributes of all geometry types the same way and wouldn't need to do cases like this one.
       // A MultiTriangleCollection stores the attributes with itself
       // if (geom_term.has_data()) 
@@ -185,6 +185,12 @@ void OGRPostGISWriterNode::process()
       const std::string labels = "labels";
       create_field(layer, labels, OFTIntegerList);
       attr_id_map[labels] = fcnt++;
+
+      // TODO: Don't hardcode building_part_id for these geometry types.
+      //  Would be better get all attributes from the attribute terminal.
+      const std::string building_part_id = "building_part_id";
+      create_field(layer, building_part_id, OFTString);
+      attr_id_map[building_part_id] = fcnt++;
     }
   } else {
     // Fields already exist, so we need to map the poly_input("attributes")
@@ -211,17 +217,14 @@ void OGRPostGISWriterNode::process()
           attr_id_map[term->get_name()] = i;
       }
     }
-    if (geom_term.is_connected_type(typeid(MultiTriangleCollection))) {
-      for (int i=0; i < fcnt; i++) {
+    if (geom_term.is_connected_type(typeid(MultiTriangleCollection)) || geom_term.is_connected_type(typeid(std::unordered_map<int, Mesh>))) {
+      for (int i = 0; i < fcnt; i++) {
         auto fdef = layer->GetLayerDefn()->GetFieldDefn(i);
-//        auto& mtc = geom_term.get<MultiTriangleCollection>(0);
-//        AttributeMap attr_map = mtc.get_attributes()[0];
-//        for (const auto& a : attr_map) {
-//          if (strcmp(fdef->GetNameRef(), a.first.c_str()) == 0)
-//            attr_id_map[a.first] = i;
-//        }
-        if (strcmp(fdef->GetNameRef(), "labels") == 0)
+        if (strcmp(fdef->GetNameRef(), "labels") == 0) {
           attr_id_map["labels"] = i;
+        } else if (strcmp(fdef->GetNameRef(), "building_part_id") == 0) {
+          attr_id_map["building_part_id"] = i;
+        }
       }
     }
   }
@@ -369,6 +372,9 @@ void OGRPostGISWriterNode::process()
                 else throw(gfException("Unsupported attribute value type for: " + attr_map.first));
               }
             }
+
+            auto bp_id = std::to_string(j);
+            poFeature_->SetField(attr_id_map["building_part_id"], bp_id.c_str());
           }
           poFeatures.push_back(poFeature_);
         }
@@ -389,7 +395,6 @@ void OGRPostGISWriterNode::process()
 
         for ( const auto& [mid, mesh] : geom_term.get<std::unordered_map<int, Mesh>>(i) ) {
           auto poFeature_ = poFeature->Clone();
-          auto bp_id = std::to_string(mid);
 
           OGRMultiPolygon ogrmultipoly = OGRMultiPolygon();
           for (auto& poly : mesh.get_polygons()) {
@@ -398,6 +403,14 @@ void OGRPostGISWriterNode::process()
               printf("couldn't add polygon to MultiPolygonZ");
             }
           }
+
+          uint label_size = mesh.get_labels().size();
+          std::vector<int> val(label_size);
+          val = mesh.get_labels();
+          poFeature_->SetField(attr_id_map["labels"], label_size, val.data());
+
+          auto bp_id = std::to_string(mid);
+          poFeature_->SetField(attr_id_map["building_part_id"], bp_id.c_str());
 
           poFeature_->SetGeometry(&ogrmultipoly);
           poFeatures.push_back(poFeature_);
