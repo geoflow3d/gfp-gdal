@@ -373,7 +373,7 @@ void OGRPostGISWriterNode::process()
               }
             }
 
-            auto bp_id = std::to_string(j);
+            auto bp_id = std::to_string(mtcs.building_part_ids_[j]);
             poFeature_->SetField(attr_id_map["building_part_id"], bp_id.c_str());
           }
           poFeatures.push_back(poFeature_);
