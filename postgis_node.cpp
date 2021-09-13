@@ -150,8 +150,17 @@ void OGRPostGISWriterNode::process()
       } else if (term->accepts_type(typeid(std::string))) {
         create_field(layer, name, OFTString);
         attr_id_map[term->get_name()] = fcnt++;
+      } else if (term->accepts_type(typeid(Date))) {
+        create_field(layer, name, OFTDate);
+        attr_id_map[term->get_name()] = fcnt++;
+      } else if (term->accepts_type(typeid(Time))) {
+        create_field(layer, name, OFTTime);
+        attr_id_map[term->get_name()] = fcnt++;
+      } else if (term->accepts_type(typeid(DateTime))) {
+        create_field(layer, name, OFTDateTime);
+        attr_id_map[term->get_name()] = fcnt++;
       }
-      }
+    }
     if (geom_term.is_connected_type(typeid(MultiTriangleCollection)) || geom_term.is_connected_type(typeid(std::unordered_map<int, Mesh>))) {
       // TODO: Ideally we would handle the attributes of all geometry types the same way and wouldn't need to do cases like this one.
       // A MultiTriangleCollection stores the attributes with itself
@@ -256,6 +265,15 @@ void OGRPostGISWriterNode::process()
       } else if (term->accepts_type(typeid(std::string))) {
         auto& val = term->get<const std::string&>(i);
         poFeature->SetField(attr_id_map[tname], val.c_str());
+      } else if (term->accepts_type(typeid(Date))) {
+        auto& val = term->get<const Date&>(i);
+        poFeature->SetField(attr_id_map[tname], val.year, val.month, val.day);
+      } else if (term->accepts_type(typeid(Time))) {
+        auto& val = term->get<const Time&>(i);
+        poFeature->SetField(attr_id_map[tname], 0, 0, 0, val.hour, val.minute, val.second, val.timeZone);
+      } else if (term->accepts_type(typeid(Time))) {
+        auto& val = term->get<const DateTime&>(i);
+        poFeature->SetField(attr_id_map[tname], val.date.year, val.date.month, val.date.day, val.time.hour, val.time.minute, val.time.second, val.time.timeZone);
       }
     }
 

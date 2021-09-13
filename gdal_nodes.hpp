@@ -16,7 +16,7 @@ class OGRLoaderNode : public Node
   std::string geometry_type_name;
   OGRwkbGeometryType geometry_type;
 
-  void push_attributes(OGRFeature &poFeature);
+  void push_attributes(OGRFeature &poFeature, std::unordered_map<std::string,int>& fieldNameMap);
 
 public:
   using Node::Node;
@@ -28,7 +28,7 @@ public:
     add_vector_output("area", typeid(float));
     add_vector_output("is_valid", typeid(bool));
 
-    add_poly_output("attributes", {typeid(bool), typeid(int), typeid(float), typeid(std::string)});
+    add_poly_output("attributes", {typeid(bool), typeid(int), typeid(float), typeid(std::string), typeid(Date), typeid(Time), typeid(DateTime)});
 
     add_param(ParamPath(filepath, "filepath", "File path"));
     add_param(ParamFloat(base_elevation, "base_elevation", "Base elevation"));
@@ -107,7 +107,7 @@ public:
   void init()
   {
     add_vector_input("geometries", {typeid(LineString), typeid(LinearRing), typeid(std::vector<TriangleCollection>), typeid(MultiTriangleCollection), typeid(Mesh), typeid(std::unordered_map<int, Mesh>)});
-    add_poly_input("attributes", {typeid(bool), typeid(int), typeid(float), typeid(std::string)}, false);
+    add_poly_input("attributes", {typeid(bool), typeid(int), typeid(float), typeid(std::string), typeid(Date), typeid(Time), typeid(DateTime)}, false);
 
     add_param(ParamPath(conn_string_, "filepath", "Connection string"));
     add_param(ParamInt(epsg, "epsg", "EPSG"));

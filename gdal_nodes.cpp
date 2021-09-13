@@ -11,7 +11,7 @@
 namespace geoflow::nodes::gdal
 {
 
-void OGRLoaderNode::push_attributes(OGRFeature &poFeature)
+void OGRLoaderNode::push_attributes(OGRFeature &poFeature, std::unordered_map<std::string,int>& fieldNameMap)
 {
   for (auto &[name, mterm] : poly_output("attributes").sub_terminals())
   {
@@ -30,6 +30,24 @@ void OGRLoaderNode::push_attributes(OGRFeature &poFeature)
     else if (mterm->accepts_type(typeid(std::string)))
     {
       mterm->push_back((std::string)poFeature.GetFieldAsString(name.c_str()));
+    }
+    else if (mterm->accepts_type(typeid(Date)))
+    {
+      DateTime t;
+      poFeature.GetFieldAsDateTime(fieldNameMap[name], &t.date.year, &t.date.month, &t.date.day, nullptr, nullptr, &t.time.second, nullptr);
+      mterm->push_back(t.date);
+    }
+    else if (mterm->accepts_type(typeid(Time)))
+    {
+      Time time;
+      poFeature.GetFieldAsDateTime(fieldNameMap[name], nullptr, nullptr, nullptr, &time.hour, &time.minute, &time.second, &time.timeZone);
+      mterm->push_back(time);
+    }
+    else if (mterm->accepts_type(typeid(DateTime)))
+    {
+      DateTime t;
+      poFeature.GetFieldAsDateTime(fieldNameMap[name], &t.date.year, &t.date.month, &t.date.day, &t.time.hour, &t.time.minute, &t.time.second, &t.time.timeZone);
+      mterm->push_back(t);
     }
   }
 }
@@ -68,11 +86,13 @@ void OGRLoaderNode::process()
   auto layer_def = poLayer->GetLayerDefn();
   auto field_count = layer_def->GetFieldCount();
 
+  std::unordered_map<std::string,int> fieldNameMap;
   for (size_t i = 0; i < field_count; ++i)
   {
     auto field_def = layer_def->GetFieldDefn(i);
     auto t = field_def->GetType();
     auto field_name = (std::string)field_def->GetNameRef();
+    fieldNameMap[field_name] = i;
     if ((t == OFTInteger) && (field_def->GetSubType() == OFSTBoolean)) 
     {
       auto &term = poly_output("attributes").add_vector(field_name, typeid(bool));
@@ -90,6 +110,21 @@ void OGRLoaderNode::process()
     else if (t == OFTReal)
     {
       auto &term = poly_output("attributes").add_vector(field_name, typeid(float));
+      // term.set(vec1f());
+    }
+    else if (t == OFTDate)
+    {
+      auto &term = poly_output("attributes").add_vector(field_name, typeid(Date));
+      // term.set(vec1f());
+    }
+    else if (t == OFTTime)
+    {
+      auto &term = poly_output("attributes").add_vector(field_name, typeid(Time));
+      // term.set(vec1f());
+    }
+    else if (t == OFTDateTime)
+    {
+      auto &term = poly_output("attributes").add_vector(field_name, typeid(DateTime));
       // term.set(vec1f());
     }
   }
@@ -129,7 +164,7 @@ void OGRLoaderNode::process()
         line_strings.push_back(line_string);
         is_valid.push_back(bool(poGeometry->IsValid()));
 
-        push_attributes(*poFeature);
+        push_attributes(*poFeature, fieldNameMap);
       }
       else if (poGeometry->getGeometryType() == wkbPolygon25D || poGeometry->getGeometryType() == wkbPolygon || poGeometry->getGeometryType() == wkbPolygonZM || poGeometry->getGeometryType() == wkbPolygonM)
       {
@@ -187,7 +222,7 @@ void OGRLoaderNode::process()
         area.push_back(float(poPolygon->get_Area()));
         is_valid.push_back(bool(poPolygon->IsValid()));
 
-        push_attributes(*poFeature);
+        push_attributes(*poFeature, fieldNameMap);
       }
       else
       {
