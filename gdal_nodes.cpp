@@ -8,6 +8,8 @@
 #include <fstream>
 #include <iomanip>
 #include <sstream>
+#include <filesystem>
+namespace fs = std::filesystem;
 
 namespace geoflow::nodes::gdal
 {
@@ -595,6 +597,7 @@ void GDALWriterNode::process() {
   auto image = input("image").get<geoflow::Image>();
 
   auto file_path = manager.substitute_globals(filepath_);
+  fs::create_directories(fs::path(file_path).parent_path());
     
   GDALDriver *poDriver = GetGDALDriverManager()->GetDriverByName("GTiff");
   GDALDataset *poDstDS;
