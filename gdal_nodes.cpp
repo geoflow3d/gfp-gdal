@@ -1,6 +1,7 @@
 #include "gdal_nodes.hpp"
 
 #include <geos_c.h>
+#include <gdal_priv.h>
 
 #include <unordered_map>
 #include <variant>
@@ -587,6 +588,42 @@ void CSVWriterNode::process()
         << distances[i] << "\n";
   }
   f_out.close();
+}
+
+void GDALWriterNode::process() {
+
+  auto image = input("image").get<geoflow::Image>();
+
+  auto file_path = manager.substitute_globals(filepath_);
+    
+  GDALDriver *poDriver = GetGDALDriverManager()->GetDriverByName("GTiff");
+  GDALDataset *poDstDS;
+  GDALDataType dataType;
+  
+  dataType = GDT_Float32;
+  
+  char **papszOptions = NULL;
+  poDstDS = poDriver->Create( file_path.c_str(), image.dim_x, image.dim_y, 1, dataType,
+                              papszOptions );
+  double adfGeoTransform[6] = { image.min_x + (*manager.data_offset)[0], image.cellsize, 0, image.min_y + (*manager.data_offset)[1], 0, image.cellsize };
+  GDALRasterBand *poBand;
+  
+  poDstDS->SetGeoTransform( adfGeoTransform );
+  
+  //    std::cout << oSRS.SetWellKnownGeogCS( WKGCS );
+  //    std::cout << pszSRS_WKT <<std::endl;
+  
+  char *pszSRS_WKT = NULL;
+//    oSRS.exportToWkt( &pszSRS_WKT );
+//    poDstDS->SetProjection( pszSRS_WKT );
+  CPLFree( pszSRS_WKT );
+  
+  poBand = poDstDS->GetRasterBand(1);
+  poBand->RasterIO( GF_Write, 0, 0, image.dim_x, image.dim_y,
+                    image.array.data(), image.dim_x, image.dim_y, dataType, 0, 0 );
+  poBand->SetNoDataValue(image.nodataval);
+  /* Once we're done, close properly the dataset */
+  GDALClose( (GDALDatasetH) poDstDS );
 }
 
 } // namespace geoflow::nodes::gdal

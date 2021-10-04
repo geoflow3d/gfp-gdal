@@ -126,6 +126,25 @@ public:
   void on_receive(gfMultiFeatureInputTerminal& it);
 };
 
+class GDALWriterNode : public Node {
+  
+  std::string filepath_ = "out.tif";
+
+  public:
+  using Node::Node;
+
+  void init() {
+    add_input("image", typeid(geoflow::Image));
+
+    add_param(ParamPath(filepath_, "filepath", "File path"));
+
+    if (GDALGetDriverCount() == 0)
+      GDALAllRegister();
+  }
+
+  void process();
+};
+
 class CSVLoaderNode : public Node
 {
   std::string filepath = "out";
