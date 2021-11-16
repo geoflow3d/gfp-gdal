@@ -145,6 +145,28 @@ class GDALWriterNode : public Node {
   void process();
 };
 
+class GDALReaderNode : public Node {
+  
+  std::string filepath_ = "out.tif";
+  int bandnr_ = 1;
+
+  public:
+  using Node::Node;
+
+  void init() {
+    add_output("image", typeid(geoflow::Image));
+    add_output("pointcloud", typeid(PointCollection));
+
+    add_param(ParamPath(filepath_, "filepath", "File path"));
+    add_param(ParamBoundedInt(bandnr_, 1, 1, "bandnr", "Band number to fetch"));
+
+    if (GDALGetDriverCount() == 0)
+      GDALAllRegister();
+  }
+
+  void process();
+};
+
 class CSVLoaderNode : public Node
 {
   std::string filepath = "out";

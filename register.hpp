@@ -11,6 +11,7 @@ void register_nodes(geoflow::NodeRegister &node_register)
   node_register.register_node<OGRPostGISWriterNode>("OGRPostGISWriter");
 
   node_register.register_node<GDALWriterNode>("GDALWriter");
+  node_register.register_node<GDALReaderNode>("GDALReader");
 
   node_register.register_node<CSVLoaderNode>("CSVLoader");
   node_register.register_node<CSVWriterNode>("CSVWriter");
