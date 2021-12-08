@@ -129,17 +129,24 @@ public:
 class GDALWriterNode : public Node {
   
   std::string filepath_ = "out.tif";
+  std::string attribute_name = "identificatie";
 
   public:
   using Node::Node;
 
   void init() {
     add_input("image", typeid(geoflow::Image));
+    add_poly_input("attributes", {typeid(bool), typeid(int), typeid(float), typeid(std::string), typeid(Date), typeid(Time), typeid(DateTime)});
 
+    add_param(ParamString(attribute_name, "attribute_name", "attribute to use as filename. Has to be a string attribute."));
     add_param(ParamPath(filepath_, "filepath", "File path"));
 
     if (GDALGetDriverCount() == 0)
       GDALAllRegister();
+  }
+
+  bool inputs_valid() {
+    return input("image").has_data();
   }
 
   void process();

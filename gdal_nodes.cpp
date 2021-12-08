@@ -596,7 +596,22 @@ void GDALWriterNode::process() {
 
   auto image = input("image").get<geoflow::Image>();
 
+  const gfSingleFeatureOutputTerminal* id_term;
+  auto id_attr_name = manager.substitute_globals(attribute_name);
+  bool use_id_from_attribute = false;
+  for (auto& term : poly_input("attributes").sub_terminals()) {
+    if ( term->get_name() == id_attr_name && term->accepts_type(typeid(std::string)) ) {
+      id_term = term;
+      use_id_from_attribute = true;
+    }
+  }
+
   auto file_path = manager.substitute_globals(filepath_);
+  if (use_id_from_attribute) {
+    auto new_file_path = fs::path(file_path).parent_path() / id_term->get<const std::string>();
+    new_file_path += fs::path(file_path).extension();
+    file_path = new_file_path.string();
+  }
   fs::create_directories(fs::path(file_path).parent_path());
     
   GDALDriver *poDriver = GetGDALDriverManager()->GetDriverByName("GTiff");
