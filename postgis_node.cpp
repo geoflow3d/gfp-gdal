@@ -422,7 +422,7 @@ void OGRPostGISWriterNode::process()
             }
           }
 
-          uint label_size = mesh.get_labels().size();
+          size_t label_size = mesh.get_labels().size();
           std::vector<int> val(label_size);
           val = mesh.get_labels();
           poFeature_->SetField(attr_id_map["labels"], label_size, val.data());
