@@ -1,11 +1,14 @@
 cmake_minimum_required(VERSION 3.14)
 project (io-gdal VERSION 0.0.1)
 
-find_package(geoflow REQUIRED)
+if(PROJECT_IS_TOP_LEVEL)
+  find_package(geoflow REQUIRED)
+  include_directories(${geoflow_INCLUDE_DIRS})
+endif()
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/" ${CMAKE_MODULE_PATH})
 # GEOS include first for overriding gdal included GEOS
-find_package( GEOS )
+find_package( GEOS CONFIG REQUIRED)
 if (GEOS_FOUND)
   include_directories(${GEOS_INCLUDE_DIR})
 endif()
@@ -19,9 +22,9 @@ set(GF_PLUGIN_TARGET_NAME "gfp_gdal")
 set(GF_PLUGIN_REGISTER ${PROJECT_SOURCE_DIR}/register.hpp)
 geoflow_create_plugin(gdal_nodes.cpp geos_nodes.cpp postgis_node.cpp)
 
-target_link_libraries( gfp_gdal
+target_link_libraries( gfp_gdal PRIVATE
   geoflow-core
-  ${GEOS_LIBRARY}
+  GEOS::geos_c
   ${GDAL_LIBRARY}
 )
 if (MSVC)
