@@ -29,4 +29,13 @@ target_link_libraries( gfp_gdal PRIVATE
 )
 if (MSVC)
   target_compile_options(gfp_gdal PRIVATE "/Zc:__cplusplus")
+
+  # collect dll's required for runtime
+  INSTALL(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Release/ DESTINATION bin
+          FILES_MATCHING 
+          PATTERN "*.dll"
+          PATTERN "gfp*" EXCLUDE)
+
 endif()
+
+
