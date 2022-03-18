@@ -112,7 +112,7 @@ public:
     add_param(ParamPath(conn_string_, "filepath", "Connection string"));
     add_param(ParamInt(epsg, "epsg", "EPSG"));
     add_param(ParamInt(transaction_batch_size_, "transaction_batch_size_", "Trnasaction batch size"));
-    // add_param(ParamString(gdaldriver_, "gdaldriver", "GDAL driver (format)"));
+    add_param(ParamString(gdaldriver_, "gdaldriver", "GDAL driver (format)"));
     add_param(ParamString(layername_, "layername", "Layer name"));
     add_param(ParamBool(overwrite_, "overwrite", "Overwrite dataset if it exists"));
     // add_param(ParamBool(append_, "append", "Append to the data set?"));
