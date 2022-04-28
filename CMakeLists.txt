@@ -8,7 +8,11 @@ endif()
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/" ${CMAKE_MODULE_PATH})
 # GEOS include first for overriding gdal included GEOS
-find_package( GEOS CONFIG REQUIRED)
+if (DEFINED VCPKG_TOOLCHAIN)
+  find_package( GEOS CONFIG REQUIRED)
+else()
+  find_package( GEOS REQUIRED)
+endif()
 if (GEOS_FOUND)
   include_directories(${GEOS_INCLUDE_DIR})
 endif()
@@ -24,7 +28,7 @@ geoflow_create_plugin(gdal_nodes.cpp geos_nodes.cpp postgis_node.cpp)
 
 target_link_libraries( gfp_gdal PRIVATE
   geoflow-core
-  GEOS::geos_c
+  geos_c
   ${GDAL_LIBRARY}
 )
 if (MSVC)
