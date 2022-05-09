@@ -5,6 +5,9 @@
 #include <fstream>
 #include <iomanip>
 #include <sstream>
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 namespace geoflow::nodes::gdal
 {
@@ -69,6 +72,13 @@ void OGRPostGISWriterNode::process()
   std::string connstr = manager.substitute_globals(conn_string_);
   std::string gdaldriver = manager.substitute_globals(gdaldriver_);
   std::string layername = manager.substitute_globals(layername_);
+
+  connstr = substitute_from_term(connstr, poly_input("attributes"));
+
+  if(create_directories_) {
+    if(!fs::create_directories(fs::path(connstr).parent_path()))
+      std::cout << "Unable to create directories " << connstr << std::endl;
+  }
 
   auto& geom_term = vector_input("geometries");
   GDALDriver* driver;
