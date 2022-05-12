@@ -93,9 +93,10 @@ class OGRPostGISWriterNode : public Node
   std::string conn_string_ = "out";
   std::string gdaldriver_ = "PostgreSQL";
   std::string layername_ = "geom";
-  bool overwrite_ = false;
-  // bool append_ = false;
-  bool create_directories_ = false;
+  // bool overwrite_dataset_ = false;
+  bool overwrite_layer_ = false;
+  bool create_directories_ = true;
+  bool require_attributes_ = true;
   int transaction_batch_size_ = 1000;
 
   vec1s key_options;
@@ -110,18 +111,26 @@ public:
     add_vector_input("geometries", {typeid(LineString), typeid(LinearRing), typeid(std::vector<TriangleCollection>), typeid(MultiTriangleCollection), typeid(Mesh), typeid(std::unordered_map<int, Mesh>)});
     add_poly_input("attributes", {typeid(bool), typeid(int), typeid(float), typeid(std::string), typeid(Date), typeid(Time), typeid(DateTime)}, false);
 
-    add_param(ParamPath(conn_string_, "filepath", "Connection string"));
+    add_param(ParamPath(conn_string_, "filepath", "Filepath or database connection string"));
     add_param(ParamInt(epsg, "epsg", "EPSG"));
     add_param(ParamInt(transaction_batch_size_, "transaction_batch_size_", "Trnasaction batch size"));
-    add_param(ParamString(gdaldriver_, "gdaldriver", "GDAL driver (format)"));
+    add_param(ParamString(gdaldriver_, "gdaldriver", "GDAL driver (format), eg GPKG or PostgreSQL"));
     add_param(ParamString(layername_, "layername", "Layer name"));
-    add_param(ParamBool(overwrite_, "overwrite", "Overwrite dataset if it exists"));
+    // add_param(ParamBool(overwrite_dataset_, "overwrite_dataset", "Overwrite dataset if it exists"));
+    add_param(ParamBool(overwrite_layer_, "overwrite", "Overwrite layer. Otherwise data is appended."));
+    add_param(ParamBool(require_attributes_, "require_attributes", "Only run when attributes input is connected"));
     add_param(ParamBool(create_directories_, "create_directories", "Create directories to write output file"));
-    // add_param(ParamBool(append_, "append", "Append to the data set?"));
     add_param(ParamStrMap(output_attribute_names, key_options, "output_attribute_names", "Output attribute names"));
 
     if (GDALGetDriverCount() == 0)
       GDALAllRegister();
+  }
+  bool inputs_valid() {
+    if (require_attributes_) {
+      return vector_input("geometries").has_data() && poly_input("attributes").has_data();
+    } else {
+      return vector_input("geometries").has_data();
+    }
   }
   void process();
 

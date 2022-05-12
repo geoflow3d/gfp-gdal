@@ -637,8 +637,11 @@ void GDALWriterNode::process() {
   CPLFree( pszSRS_WKT );
   
   poBand = poDstDS->GetRasterBand(1);
-  poBand->RasterIO( GF_Write, 0, 0, image.dim_x, image.dim_y,
+  auto error = poBand->RasterIO( GF_Write, 0, 0, image.dim_x, image.dim_y,
                     image.array.data(), image.dim_x, image.dim_y, dataType, 0, 0 );
+  if (error == CE_Failure) {
+    throw(gfException("Unable to write to raster"));
+  }
   poBand->SetNoDataValue(image.nodataval);
   /* Once we're done, close properly the dataset */
   GDALClose( (GDALDatasetH) poDstDS );
@@ -701,9 +704,12 @@ void GDALReaderNode::process() {
   int   nXSize = poBand->GetXSize();
   int   nYSize = poBand->GetYSize();
   pafImageData = (float *) CPLMalloc(sizeof(float)*nXSize*nYSize);
-  poBand->RasterIO( GF_Read, 0, 0, nXSize, nYSize,
+  auto error = poBand->RasterIO( GF_Read, 0, 0, nXSize, nYSize,
                   pafImageData, nXSize, nYSize, GDT_Float32,
                   0, 0 );
+  if (CE_Failure == error) {
+    throw(gfException("Unable to open raster dataset"));
+  }
 
   PointCollection pointcloud;
   for (size_t i=0; i<nXSize; ++i) {

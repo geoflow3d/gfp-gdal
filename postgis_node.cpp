@@ -87,7 +87,11 @@ void OGRPostGISWriterNode::process()
     throw(gfException(gdaldriver + " driver not available"));
   }
 
-  GDALDataset* dataSource = driver->Create(connstr.c_str(), 0, 0, 0, GDT_Unknown, NULL);
+  GDALDataset* dataSource;
+  dataSource = (GDALDataset*) GDALDataset::Open(connstr.c_str(), GDAL_OF_VECTOR||GDAL_OF_UPDATE);
+  if (dataSource == nullptr) {
+    dataSource = driver->Create(connstr.c_str(), 0, 0, 0, GDT_Unknown, NULL);
+  }
   if (dataSource == nullptr) {
     throw(gfException("Starting database connection failed."));
   }
@@ -115,7 +119,7 @@ void OGRPostGISWriterNode::process()
   
   OGRLayer* layer = nullptr;
   char** lco = nullptr;
-  if (overwrite_) {
+  if (overwrite_layer_) {
     lco = CSLSetNameValue(lco, "OVERWRITE", "YES");
   } else {
     lco = CSLSetNameValue(lco, "OVERWRITE", "NO");
