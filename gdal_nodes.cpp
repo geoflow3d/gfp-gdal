@@ -594,7 +594,7 @@ void CSVWriterNode::process()
 
 void GDALWriterNode::process() {
 
-  auto image = input("image").get<geoflow::Image>();
+  auto& images = poly_input("image");
 
   const gfSingleFeatureOutputTerminal* id_term;
   auto id_attr_name = manager.substitute_globals(attribute_name);
@@ -612,19 +612,22 @@ void GDALWriterNode::process() {
     new_file_path += fs::path(file_path).extension();
     file_path = new_file_path.string();
   }
-  fs::create_directories(fs::path(file_path).parent_path());
+  if(gdaldriver_ != "PostGISRaster" && create_directories_) fs::create_directories(fs::path(file_path).parent_path());
     
-  GDALDriver *poDriver = GetGDALDriverManager()->GetDriverByName("GTiff");
+  GDALDriver *poDriver = GetGDALDriverManager()->GetDriverByName(gdaldriver_.c_str());
   GDALDataset *poDstDS;
   GDALDataType dataType;
   
   dataType = GDT_Float32;
   
   char **papszOptions = NULL;
-  poDstDS = poDriver->Create( file_path.c_str(), image.dim_x, image.dim_y, 1, dataType,
+  // TODO: should check if input images have the same dimension and cellsize....
+  auto& image = images.sub_terminals()[0]->get<geoflow::Image>();
+  poDstDS = poDriver->Create( file_path.c_str(), image.dim_x, image.dim_y, images.sub_terminals().size(), dataType,
                               papszOptions );
   double adfGeoTransform[6] = { image.min_x + (*manager.data_offset)[0], image.cellsize, 0, image.min_y + (*manager.data_offset)[1], 0, image.cellsize };
-  GDALRasterBand *poBand;
+  
+  auto no_data_val = image.nodataval;
   
   poDstDS->SetGeoTransform( adfGeoTransform );
   
@@ -636,13 +639,26 @@ void GDALWriterNode::process() {
 //    poDstDS->SetProjection( pszSRS_WKT );
   CPLFree( pszSRS_WKT );
   
-  poBand = poDstDS->GetRasterBand(1);
-  auto error = poBand->RasterIO( GF_Write, 0, 0, image.dim_x, image.dim_y,
-                    image.array.data(), image.dim_x, image.dim_y, dataType, 0, 0 );
-  if (error == CE_Failure) {
-    throw(gfException("Unable to write to raster"));
+  size_t nBand = 1;
+  GDALRasterBand *poBand;
+  for (auto& sterm : images.sub_terminals()) {
+    // TODO: add band for fp in/out, (excl ground points outside fp), ensure pixels ahn 3/4 are the same located (use fp for dimensions)
+    auto image = sterm->get<geoflow::Image>();
+
+    // use same nodata value for all bands
+    if (no_data_val != image.nodataval) {
+      std::replace(image.array.begin(), image.array.end(), image.nodataval, no_data_val);
+    }
+  
+    poBand = poDstDS->GetRasterBand(nBand++);
+    auto error = poBand->RasterIO( GF_Write, 0, 0, image.dim_x, image.dim_y,
+                      image.array.data(), image.dim_x, image.dim_y, dataType, 0, 0 );
+    if (error == CE_Failure) {
+      throw(gfException("Unable to write to raster"));
+    }
+    poBand->SetNoDataValue(no_data_val);
+    poBand->SetDescription(sterm->get_name().c_str());
   }
-  poBand->SetNoDataValue(image.nodataval);
   /* Once we're done, close properly the dataset */
   GDALClose( (GDALDatasetH) poDstDS );
 }
