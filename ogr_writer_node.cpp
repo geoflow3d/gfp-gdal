@@ -19,7 +19,7 @@ inline void create_field(OGRLayer* layer, const std::string& name, OGRFieldType 
   }
 }
 
-OGRPolygon OGRPostGISWriterNode::create_polygon(const LinearRing& lr) {
+OGRPolygon OGRWriterNode::create_polygon(const LinearRing& lr) {
   OGRPolygon ogrpoly;
   OGRLinearRing ogrring;
   // set exterior ring
@@ -45,7 +45,7 @@ OGRPolygon OGRPostGISWriterNode::create_polygon(const LinearRing& lr) {
   return ogrpoly;
 }
 
-void OGRPostGISWriterNode::on_receive(gfMultiFeatureInputTerminal& it) {
+void OGRWriterNode::on_receive(gfMultiFeatureInputTerminal& it) {
   key_options.clear();
   if(&it == &poly_input("attributes")) {
     for(auto sub_term : it.sub_terminals()) {
@@ -67,7 +67,7 @@ inline std::string find_and_replace(std::string str, std::string from, std::stri
   return str;
 }
 
-void OGRPostGISWriterNode::process()
+void OGRWriterNode::process()
 {
   std::string connstr = manager.substitute_globals(conn_string_);
   std::string gdaldriver = manager.substitute_globals(gdaldriver_);

@@ -8,7 +8,6 @@ void register_nodes(geoflow::NodeRegister &node_register)
 {
   node_register.register_node<OGRLoaderNode>("OGRLoader");
   node_register.register_node<OGRWriterNode>("OGRWriter");
-  node_register.register_node<OGRPostGISWriterNode>("OGRPostGISWriter");
 
   node_register.register_node<GDALWriterNode>("GDALWriter");
   node_register.register_node<GDALReaderNode>("GDALReader");

@@ -43,55 +43,8 @@ public:
 class OGRWriterNode : public Node
 {
   int epsg = 7415;
-  std::string filepath_ = "out";
-  std::string gdaldriver_ = "GPKG";
-  std::string layername_ = "geom";
-  bool overwrite_ = false;
-  bool append_ = false;
-  bool require_attributes_ = false;
-
-  vec1s key_options;
-  StrMap output_attribute_names;
-
-  OGRPolygon create_polygon(const LinearRing& lr);
-
-public:
-  using Node::Node;
-  void init()
-  {
-    add_vector_input("geometries", {typeid(LineString), typeid(LinearRing), typeid(TriangleCollection), typeid(Mesh)});
-    add_poly_input("attributes", {typeid(bool), typeid(int), typeid(float), typeid(std::string), typeid(Date), typeid(Time), typeid(DateTime)}, false);
-
-    add_param(ParamPath(filepath_, "filepath", "File path"));
-    add_param(ParamInt(epsg, "epsg", "EPSG"));
-    add_param(ParamString(gdaldriver_, "gdaldriver", "GDAL driver (format)"));
-    add_param(ParamString(layername_, "layername", "Layer name"));
-    add_param(ParamBool(overwrite_, "overwrite", "Overwrite dataset if it exists"));
-    add_param(ParamBool(append_, "append", "Append to the data set?"));
-    add_param(ParamBool(require_attributes_, "require_attributes", "Only run when attributes input is connected"));
-    add_param(ParamStrMap(output_attribute_names, key_options, "output_attribute_names", "Output attribute names"));
-
-    if (GDALGetDriverCount() == 0)
-      GDALAllRegister();
-  }
-  bool inputs_valid() {
-    if (require_attributes_) {
-      return vector_input("geometries").has_data() && poly_input("attributes").has_data();
-    } else {
-      return vector_input("geometries").has_data();
-    }
-  }
-
-  void process();
-
-  void on_receive(gfMultiFeatureInputTerminal& it);
-};
-
-class OGRPostGISWriterNode : public Node
-{
-  int epsg = 7415;
   std::string conn_string_ = "out";
-  std::string gdaldriver_ = "PostgreSQL";
+  std::string gdaldriver_ = "GPKG";
   std::string layername_ = "geom";
   // bool overwrite_dataset_ = false;
   bool overwrite_layer_ = false;
@@ -125,7 +78,13 @@ public:
     if (GDALGetDriverCount() == 0)
       GDALAllRegister();
   }
-  bool inputs_valid() {
+  bool parameters_valid() override {
+    if (manager.substitute_globals(conn_string_).empty()) 
+      return false;
+    else 
+      return true;
+  }
+  bool inputs_valid() override {
     if (require_attributes_) {
       return vector_input("geometries").has_data() && poly_input("attributes").has_data();
     } else {
@@ -134,7 +93,7 @@ public:
   }
   void process();
 
-  void on_receive(gfMultiFeatureInputTerminal& it);
+  void on_receive(gfMultiFeatureInputTerminal& it) override;
 };
 
 class GDALWriterNode : public Node {
@@ -161,7 +120,14 @@ class GDALWriterNode : public Node {
       GDALAllRegister();
   }
 
-  bool inputs_valid() {
+  bool parameters_valid() override {
+    if (manager.substitute_globals(filepath_).empty()) 
+      return false;
+    else 
+      return true;
+  }
+
+  bool inputs_valid() override {
     return poly_input("image").has_data();
   }
 
@@ -170,7 +136,7 @@ class GDALWriterNode : public Node {
 
 class GDALReaderNode : public Node {
   
-  std::string filepath_ = "out.tif";
+  std::string filepath_;
   int bandnr_ = 1;
 
   public:
@@ -192,7 +158,7 @@ class GDALReaderNode : public Node {
 
 class CSVLoaderNode : public Node
 {
-  std::string filepath = "out";
+  std::string filepath = "";
   int thin_nth = 5;
 
 public:
@@ -209,7 +175,7 @@ public:
 
 class CSVWriterNode : public Node
 {
-  std::string filepath = "out";
+  std::string filepath = "out.csv";
 
 public:
   using Node::Node;
@@ -221,6 +187,12 @@ public:
     add_param(ParamPath(filepath, "filepath", "File path"));
   }
   void process();
+  bool parameters_valid() override {
+    if (manager.substitute_globals(filepath).empty()) 
+      return false;
+    else 
+      return true;
+  }
 };
 
 } // namespace geoflow::nodes::gdal
