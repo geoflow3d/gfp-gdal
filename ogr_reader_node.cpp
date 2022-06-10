@@ -133,8 +133,15 @@ void OGRLoaderNode::process()
   bool found_offset = manager.data_offset.has_value();
   poLayer->ResetReading();
 
+  
+  if ((poLayer->GetFeatureCount()) < feature_select || feature_select < 0)
+    throw gfIOError("Illegal feature_select value");
+
+  size_t fid{1};
   for (auto &poFeature : poLayer)
   {
+    if(feature_select != 0 && fid++ != feature_select) continue;
+
     // read feature geometry
     OGRGeometry *poGeometry;
     poGeometry = poFeature->GetGeometryRef();
@@ -227,7 +234,7 @@ void OGRLoaderNode::process()
       }
       else
       {
-        std::cout << "unsupported geometry\n";
+        throw gfIOError("Unsupported geometry type (if multipolygon, please convert to single polygons)\n");
       }
     }
   }

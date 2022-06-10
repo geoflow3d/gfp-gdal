@@ -87,7 +87,7 @@ void OGRWriterNode::process()
     throw(gfException(gdaldriver + " driver not available"));
   }
 
-  GDALDataset* dataSource;
+  GDALDataset* dataSource = nullptr;
   dataSource = (GDALDataset*) GDALDataset::Open(connstr.c_str(), GDAL_OF_VECTOR||GDAL_OF_UPDATE);
   if (dataSource == nullptr) {
     dataSource = driver->Create(connstr.c_str(), 0, 0, 0, GDT_Unknown, NULL);
