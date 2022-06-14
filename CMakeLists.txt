@@ -6,7 +6,7 @@ if(PROJECT_IS_TOP_LEVEL)
   include_directories(${geoflow_INCLUDE_DIRS})
 endif()
 
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/" ${CMAKE_MODULE_PATH})
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/" ${CMAKE_MODULE_PATH})
 # GEOS include first for overriding gdal included GEOS
 if (DEFINED VCPKG_TOOLCHAIN)
   find_package( GEOS CONFIG REQUIRED)
