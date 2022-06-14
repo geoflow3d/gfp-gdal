@@ -75,16 +75,16 @@ void OGRWriterNode::process()
 
   connstr = substitute_from_term(connstr, poly_input("attributes"));
 
-  if(create_directories_) {
-    if(!fs::create_directories(fs::path(connstr).parent_path()))
-      std::cout << "Unable to create directories " << connstr << std::endl;
-  }
-
   auto& geom_term = vector_input("geometries");
   GDALDriver* driver;
   driver = GetGDALDriverManager()->GetDriverByName(gdaldriver.c_str());
   if (driver == nullptr) {
     throw(gfException(gdaldriver + " driver not available"));
+  }
+
+  if(gdaldriver != "PostgreSQL" && create_directories_) {
+    if(!fs::create_directories(fs::path(connstr).parent_path()))
+      std::cout << "Unable to create directories " << connstr << std::endl;
   }
 
   GDALDataset* dataSource = nullptr;
