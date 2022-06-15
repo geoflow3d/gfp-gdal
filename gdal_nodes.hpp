@@ -183,8 +183,8 @@ public:
   using Node::Node;
   void init()
   {
-    add_input("points", typeid(PointCollection));
-    add_input("distances", typeid(vec1f));
+    add_input("geometry", {typeid(PointCollection), typeid(SegmentCollection)});
+    add_poly_input("attributes", {typeid(bool), typeid(int), typeid(float), typeid(std::string)});
 
     add_param(ParamPath(filepath, "filepath", "File path"));
   }
