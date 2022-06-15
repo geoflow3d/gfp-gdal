@@ -49,7 +49,7 @@ void OGRWriterNode::on_receive(gfMultiFeatureInputTerminal& it) {
   key_options.clear();
   if(&it == &poly_input("attributes")) {
     for(auto sub_term : it.sub_terminals()) {
-      key_options.push_back(sub_term->get_name());
+      key_options.push_back(sub_term->get_full_name());
     }
   }
 };
@@ -136,7 +136,7 @@ void OGRWriterNode::process()
 
     // Create GDAL feature attributes
     for (auto& term : poly_input("attributes").sub_terminals()) {
-      std::string name = term->get_name();
+      std::string name = term->get_full_name();
       std::cout << "Field " << name << " has a size of " << term->get_data_vec().size() << std::endl;
       if (geom_size != term->get_data_vec().size()) {
         throw(gfException("Number of attributes not equal to number of geometries [field name =" + name + "]"));
@@ -154,25 +154,25 @@ void OGRWriterNode::process()
         if (layer->CreateField(&oField) != OGRERR_NONE) {
           throw(gfException("Creating field failed"));
         }
-        attr_id_map[term->get_name()] = fcnt++;
+        attr_id_map[term->get_full_name()] = fcnt++;
       } else if (term->accepts_type(typeid(float))) {
         create_field(layer, name, OFTReal);
-        attr_id_map[term->get_name()] = fcnt++;
+        attr_id_map[term->get_full_name()] = fcnt++;
       } else if (term->accepts_type(typeid(int))) {
         create_field(layer, name, OFTInteger64);
-        attr_id_map[term->get_name()] = fcnt++;
+        attr_id_map[term->get_full_name()] = fcnt++;
       } else if (term->accepts_type(typeid(std::string))) {
         create_field(layer, name, OFTString);
-        attr_id_map[term->get_name()] = fcnt++;
+        attr_id_map[term->get_full_name()] = fcnt++;
       } else if (term->accepts_type(typeid(Date))) {
         create_field(layer, name, OFTDate);
-        attr_id_map[term->get_name()] = fcnt++;
+        attr_id_map[term->get_full_name()] = fcnt++;
       } else if (term->accepts_type(typeid(Time))) {
         create_field(layer, name, OFTTime);
-        attr_id_map[term->get_name()] = fcnt++;
+        attr_id_map[term->get_full_name()] = fcnt++;
       } else if (term->accepts_type(typeid(DateTime))) {
         create_field(layer, name, OFTDateTime);
-        attr_id_map[term->get_name()] = fcnt++;
+        attr_id_map[term->get_full_name()] = fcnt++;
       }
     }
     if (geom_term.is_connected_type(typeid(MultiTriangleCollection)) || geom_term.is_connected_type(typeid(std::unordered_map<int, Mesh>))) {
@@ -221,7 +221,7 @@ void OGRWriterNode::process()
     // But: what if layer has a different set of attributes?
     fcnt = layer->GetLayerDefn()->GetFieldCount();
     for (auto& term : poly_input("attributes").sub_terminals()) {
-      std::string name = term->get_name();
+      std::string name = term->get_full_name();
       std::cout << "Field " << name << " has a size of " << term->get_data_vec().size() << std::endl;
       if (geom_size != term->get_data_vec().size()) {
         throw(gfException("Number of attributes not equal to number of geometries [field name =" + name + "]"));
@@ -237,7 +237,7 @@ void OGRWriterNode::process()
       for (int i=0; i < fcnt; i++) {
         auto fdef = layer->GetLayerDefn()->GetFieldDefn(i);
         if (strcmp(fdef->GetNameRef(), name.c_str()) == 0)
-          attr_id_map[term->get_name()] = i;
+          attr_id_map[term->get_full_name()] = i;
       }
     }
     if (geom_term.is_connected_type(typeid(MultiTriangleCollection)) || geom_term.is_connected_type(typeid(std::unordered_map<int, Mesh>))) {
@@ -266,7 +266,7 @@ void OGRWriterNode::process()
     // Add the attributes to the feature
     for (auto& term : poly_input("attributes").sub_terminals()) {
       if (!term->get_data_vec()[i].has_value()) continue;
-      auto tname = term->get_name();
+      auto tname = term->get_full_name();
       if (term->accepts_type(typeid(bool))) {
         auto& val = term->get<const bool&>(i);
         poFeature->SetField(attr_id_map[tname], val);
