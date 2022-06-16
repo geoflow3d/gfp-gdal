@@ -26,11 +26,19 @@ set(GF_PLUGIN_TARGET_NAME "gfp_gdal")
 set(GF_PLUGIN_REGISTER ${PROJECT_SOURCE_DIR}/register.hpp)
 geoflow_create_plugin(gdal_nodes.cpp geos_nodes.cpp ogr_reader_node.cpp ogr_writer_node.cpp)
 
-target_link_libraries( gfp_gdal PRIVATE
-  geoflow-core
-  geos_c
-  ${GDAL_LIBRARY}
-)
+if (DEFINED VCPKG_TOOLCHAIN)
+  target_link_libraries( gfp_gdal PRIVATE
+    geoflow-core
+    GEOS::geos_c
+    ${GDAL_LIBRARIES}
+  )
+else()
+  target_link_libraries( gfp_gdal PRIVATE
+    geoflow-core
+    geos_c
+    ${GDAL_LIBRARY}
+  )
+endif()
 if (MSVC)
   target_compile_options(gfp_gdal PRIVATE "/Zc:__cplusplus")
 
