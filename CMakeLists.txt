@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.14)
-project (io-gdal VERSION 0.0.1)
+cmake_minimum_required(VERSION 3.21)
+project (io-gdal VERSION 0.1.0)
 
 if(PROJECT_IS_TOP_LEVEL)
   find_package(geoflow REQUIRED)
@@ -39,7 +39,6 @@ if (MSVC)
           FILES_MATCHING 
           PATTERN "*.dll"
           PATTERN "gfp*" EXCLUDE)
-
 endif()
 
 
