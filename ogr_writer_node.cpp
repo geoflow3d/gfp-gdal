@@ -88,7 +88,7 @@ void OGRWriterNode::process()
   }
 
   GDALDataset* dataSource = nullptr;
-  dataSource = (GDALDataset*) GDALDataset::Open(connstr.c_str(), GDAL_OF_VECTOR||GDAL_OF_UPDATE);
+  dataSource = (GDALDataset*) GDALOpenEx(connstr.c_str(), GDAL_OF_VECTOR|GDAL_OF_UPDATE, NULL, NULL, NULL);
   if (dataSource == nullptr) {
     dataSource = driver->Create(connstr.c_str(), 0, 0, 0, GDT_Unknown, NULL);
   }
