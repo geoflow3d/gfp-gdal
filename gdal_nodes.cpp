@@ -52,64 +52,81 @@ void CSVPointLoaderNode::process()
 
 void CSVSegmentLoaderNode::process()
 {
-  SegmentCollection segments;
-
-  std::ifstream f_in(manager.substitute_globals(filepaths));
-  float px, py, pz;
-  size_t i = 0;
-  std::vector<std::string> columns;
-  std::string header;
-  std::getline(f_in, header);
-  std::istringstream headerss;
-  headerss.str(header);
-  for (std::string column; std::getline(headerss, column, *separator.c_str()); ) {
-    columns.push_back(column);
-    if( !(
-      column == "x_start" ||
-      column == "y_start" ||
-      column == "z_start" ||
-      column == "x_end" ||
-      column == "y_end" ||
-      column == "z_end"
-    )) {
-      segments.add_attribute_vec1s(column);
-    }
-  }
-  size_t NC = columns.size();
-  float xs, ys, zs, xe, ye, ze;
-  while (!f_in.eof()) {
-    for (size_t i=0; i<NC; ++i ) {
-      if (columns[i] == "x_start") {
-        f_in >> xs;
-      } else if (columns[i] == "y_start") {
-        f_in >> ys;
-      } else if (columns[i] == "z_start") {
-        f_in >> zs;
-      } else if (columns[i] == "x_end") {
-        f_in >> xe;
-      } else if (columns[i] == "y_end") {
-        f_in >> ye;
-      } else if (columns[i] == "z_end") {
-        f_in >> ze;
-      } else {
-        auto* attr = segments.get_attribute_vec1s(columns[i]);
-        std::string s;
-        f_in >> s;
-        (*attr).push_back(s);
+  // SegmentCollection isegments;
+  std::unordered_map<std::string, SegmentCollection> segments_by_bid;
+  for (auto& filepath : files) {
+    std::ifstream f_in(manager.substitute_globals(filepaths));
+    float px, py, pz;
+    size_t i = 0;
+    std::vector<std::string> columns, attr_names;
+    std::string header;
+    std::getline(f_in, header);
+    std::istringstream headerss;
+    headerss.str(header);
+    for (std::string column; std::getline(headerss, column, *separator.c_str()); ) {
+      columns.push_back(column);
+      if( !(
+        column == "x_start" ||
+        column == "y_start" ||
+        column == "z_start" ||
+        column == "x_end" ||
+        column == "y_end" ||
+        column == "z_end"
+      )) {
+        attr_names.push_back(column);
+        // isegments.add_attribute_vec1s(column);
       }
     }
-    segments.push_back({
-      arr3f({xs, ys, zs}),
-      arr3f({xe, ye, ze})
-    });
-    // eat up \n so that we reach eof after reading last line
-    f_in.get();
-    f_in.get();
-    f_in.get();
+    size_t NC = columns.size();
+    float xs, ys, zs, xe, ye, ze;
+    while (!f_in.eof()) {
+      SegmentCollection* segments;
+      for (size_t i=0; i<NC; ++i ) {
+        if (columns[i] == "x_start") {
+          f_in >> xs;
+        } else if (columns[i] == "y_start") {
+          f_in >> ys;
+        } else if (columns[i] == "z_start") {
+          f_in >> zs;
+        } else if (columns[i] == "x_end") {
+          f_in >> xe;
+        } else if (columns[i] == "y_end") {
+          f_in >> ye;
+        } else if (columns[i] == "z_end") {
+          f_in >> ze;
+        } else {
+          std::string s;
+          f_in >> s;
+          if(columns[i]=="buildingID") {
+            auto result = segments_by_bid.emplace(std::make_pair(s, SegmentCollection()));
+            segments = &(result.first);
+            if(result.second()) { // was just created; we need to initialise the attribute vecs
+              for (auto& name : attr_names) {
+                segments->add_attribute_vec1s(name);
+              }
+            } 
+          }
+          auto* attr = segments->get_attribute_vec1s(columns[i]);
+          (*attr).push_back(s);
+        }
+      }
+      segments->push_back({
+        arr3f({xs, ys, zs}),
+        arr3f({xe, ye, ze})
+      });
+      // eat up \n so that we reach eof after reading last line
+      f_in.get();
+      f_in.get();
+      f_in.get();
+    }
+    f_in.close();
   }
-  f_in.close();
 
-  output("segments").set(segments);
+
+  // SegmentCollection isegments;
+  for (auto& [bid,segs] : segments_by_bid) {
+    output("segments").push_back(segs);
+  }
 }
 
 void CSVWriterNode::process()
