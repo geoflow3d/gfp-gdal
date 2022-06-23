@@ -173,7 +173,7 @@ class GDALReaderNode : public Node {
   void process();
 };
 
-class CSVLoaderNode : public Node
+class CSVPointLoaderNode : public Node
 {
   std::string filepath = "";
   int thin_nth = 5;
@@ -190,11 +190,26 @@ public:
   void process();
 };
 
+class CSVSegmentLoaderNode : public Node
+{
+  std::string filepaths = "";
+  std::string separator = " ";
+
+public:
+  using Node::Node;
+  void init()
+  {
+    add_output("segments", typeid(SegmentCollection));
+
+    add_param(ParamPath(filepaths, "filepaths", "File paths"));
+  }
+  void process();
+};
 
 class CSVWriterNode : public Node
 {
   std::string filepath = "out.csv";
-  std::string separator = ";";
+  std::string separator = " ";
   bool require_attributes_{true};
 
   vec1s key_options;

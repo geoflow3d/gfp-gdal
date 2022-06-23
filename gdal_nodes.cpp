@@ -29,7 +29,7 @@ namespace fs = std::filesystem;
 namespace geoflow::nodes::gdal
 {
 
-void CSVLoaderNode::process()
+void CSVPointLoaderNode::process()
 {
   PointCollection points;
 
@@ -52,23 +52,64 @@ void CSVLoaderNode::process()
 
 void CSVSegmentLoaderNode::process()
 {
-  PointCollection points;
+  SegmentCollection segments;
 
-  std::ifstream f_in(manager.substitute_globals(filepath));
+  std::ifstream f_in(manager.substitute_globals(filepaths));
   float px, py, pz;
   size_t i = 0;
+  std::vector<std::string> columns;
   std::string header;
   std::getline(f_in, header);
-  while (f_in >> px >> py >> pz)
-  {
-    if (i++ % thin_nth == 0)
-    {
-      points.push_back({px, py, pz});
+  std::istringstream headerss;
+  headerss.str(header);
+  for (std::string column; std::getline(headerss, column, *separator.c_str()); ) {
+    columns.push_back(column);
+    if( !(
+      column == "x_start" ||
+      column == "y_start" ||
+      column == "z_start" ||
+      column == "x_end" ||
+      column == "y_end" ||
+      column == "z_end"
+    )) {
+      segments.add_attribute_vec1s(column);
     }
+  }
+  size_t NC = columns.size();
+  float xs, ys, zs, xe, ye, ze;
+  while (!f_in.eof()) {
+    for (size_t i=0; i<NC; ++i ) {
+      if (columns[i] == "x_start") {
+        f_in >> xs;
+      } else if (columns[i] == "y_start") {
+        f_in >> ys;
+      } else if (columns[i] == "z_start") {
+        f_in >> zs;
+      } else if (columns[i] == "x_end") {
+        f_in >> xe;
+      } else if (columns[i] == "y_end") {
+        f_in >> ye;
+      } else if (columns[i] == "z_end") {
+        f_in >> ze;
+      } else {
+        auto* attr = segments.get_attribute_vec1s(columns[i]);
+        std::string s;
+        f_in >> s;
+        (*attr).push_back(s);
+      }
+    }
+    segments.push_back({
+      arr3f({xs, ys, zs}),
+      arr3f({xe, ye, ze})
+    });
+    // eat up \n so that we reach eof after reading last line
+    f_in.get();
+    f_in.get();
+    f_in.get();
   }
   f_in.close();
 
-  output("points").set(points);
+  output("segments").set(segments);
 }
 
 void CSVWriterNode::process()
