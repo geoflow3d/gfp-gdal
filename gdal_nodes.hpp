@@ -193,22 +193,38 @@ public:
 class CSVWriterNode : public Node
 {
   std::string filepath = "out.csv";
+  std::string separator = ";";
+  bool require_attributes_{true};
 
 public:
   using Node::Node;
   void init()
   {
-    add_input("points", typeid(PointCollection));
-    add_input("distances", typeid(vec1f));
+    add_input("geometry", {typeid(PointCollection), typeid(SegmentCollection)});
+    add_poly_input("attributes", {typeid(bool), typeid(int), typeid(float), typeid(std::string), typeid(Date), typeid(Time), typeid(DateTime)});
 
     add_param(ParamPath(filepath, "filepath", "File path"));
+    add_param(ParamBool(require_attributes_, "require_attributes", "Only run when attributes input is connected"));
+
   }
   void process();
+
+  void print_collection_attributes(std::ofstream& f_out, const attribute_vec_map& avm, const size_t& i);
+  void print_attributes(std::ofstream& f_out, const size_t& i);
+
   bool parameters_valid() override {
     if (manager.substitute_globals(filepath).empty()) 
       return false;
     else 
       return true;
+  }
+
+  bool inputs_valid() override {
+    if (require_attributes_) {
+      return vector_input("geometry").has_data() && poly_input("attributes").has_data();
+    } else {
+      return vector_input("geometry").has_data();
+    }
   }
 };
 

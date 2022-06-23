@@ -52,21 +52,113 @@ void CSVLoaderNode::process()
 
 void CSVWriterNode::process()
 {
-  auto points = input("points").get<PointCollection>();
-  auto distances = input("distances").get<vec1f>();
+  auto& geom_term = input("geometry");
+  size_t N = geom_term.size();
 
-  std::ofstream f_out(manager.substitute_globals(filepath));
+  auto file_path = manager.substitute_globals(filepath);
+  auto parent_path = fs::path(file_path).parent_path();
+  if (!parent_path.empty()) fs::create_directories(parent_path);
+  std::ofstream f_out(file_path);
   f_out << std::fixed << std::setprecision(2);
-  f_out << "x y z distance\n";
-  for (size_t i = 0; i < points.size(); ++i)
-  {
-    f_out
-        << points[i][0] + (*manager.data_offset)[0] << " "
-        << points[i][1] + (*manager.data_offset)[1] << " "
-        << points[i][2] + (*manager.data_offset)[2] << " "
-        << distances[i] << "\n";
+
+  if (geom_term.is_connected_type(typeid(PointCollection))) {
+    f_out << "x" << separator;
+    f_out << "y" << separator;
+    f_out << "z" << separator;
+  } else if (geom_term.is_connected_type(typeid(SegmentCollection))) {
+    f_out << "x_start" << separator;
+    f_out << "y_start" << separator;
+    f_out << "z_start" << separator;
+    f_out << "x_end" << separator;
+    f_out << "y_end" << separator;
+    f_out << "z_end" << separator;
   }
+
+  // const attribute_vec_map* avm;
+  if (geom_term.is_connected_type(typeid(PointCollection))) {
+    auto& pc = geom_term.get<PointCollection>();
+    auto& avm = pc.get_attributes();
+    for (auto& [name, val]: avm) {
+      f_out << name << separator;  
+    }
+  } else if (geom_term.is_connected_type(typeid(SegmentCollection))) {
+    auto& sc = geom_term.get<SegmentCollection>();
+    auto& avm = sc.get_attributes();
+    for (auto& [name, val]: avm) {
+      f_out << name << separator;  
+    }
+  }
+  if (require_attributes_) {
+    for (auto& term : poly_input("attributes").sub_terminals()) {
+      f_out << term->get_full_name() << separator;
+    }
+  }
+  f_out << "\n"; // end of header line
+  if (geom_term.is_connected_type(typeid(PointCollection))) {
+    for (size_t n=0; n<N; ++n){  
+      auto& points = geom_term.get<PointCollection>(n);
+      auto& avm = points.get_attributes();
+      for (size_t i = 0; i < points.size(); ++i)
+      {
+        f_out
+            << points[i][0] + (*manager.data_offset)[0] << separator
+            << points[i][1] + (*manager.data_offset)[1] << separator
+            << points[i][2] + (*manager.data_offset)[2] << separator;
+        print_collection_attributes(f_out, avm, i);
+        if (require_attributes_) print_attributes(f_out, n);
+        f_out << "\n";
+      }
+    }
+  } else if (geom_term.is_connected_type(typeid(SegmentCollection))) {
+    for (size_t n=0; n<N; ++n){  
+      auto& segments = geom_term.get<SegmentCollection>(n);
+      auto& avm = segments.get_attributes();
+
+      for (size_t i = 0; i < segments.size(); ++i)
+      {
+        f_out
+            << segments[i][0][0] + (*manager.data_offset)[0] << separator
+            << segments[i][0][1] + (*manager.data_offset)[1] << separator
+            << segments[i][0][2] + (*manager.data_offset)[2] << separator
+            << segments[i][1][0] + (*manager.data_offset)[0] << separator
+            << segments[i][1][1] + (*manager.data_offset)[1] << separator
+            << segments[i][1][2] + (*manager.data_offset)[2] << separator;
+        print_collection_attributes(f_out, avm, i);
+        if (require_attributes_) print_attributes(f_out, n);
+        f_out << "\n";
+      }
+    }
+  }
+
   f_out.close();
+}
+
+void CSVWriterNode::print_attributes(std::ofstream& f_out, const size_t& i) {
+  for (auto& term : poly_input("attributes").sub_terminals()) {
+    if (term->accepts_type(typeid(bool))) {
+      f_out << term->get<bool>(i) << separator;
+    } else if (term->accepts_type(typeid(float))) {
+      f_out << term->get<float>(i) << separator;
+    } else if (term->accepts_type(typeid(int))) {
+      f_out << term->get<int>(i) << separator;
+    } else if (term->accepts_type(typeid(std::string))) {
+      f_out << term->get<std::string>(i) << separator;
+    }
+  }
+}
+
+void CSVWriterNode::print_collection_attributes(std::ofstream& f_out, const attribute_vec_map& avm, const size_t& i) {
+  for (auto& [anme, attr] : avm) {
+    if (auto vec = std::get_if<vec1b>(&attr)) {
+      f_out << (*vec)[i] << separator;
+    } else if (auto vec = std::get_if<vec1i>(&attr)) {
+      f_out << (*vec)[i] << separator;
+    } else if (auto vec = std::get_if<vec1s>(&attr)) {
+      f_out << (*vec)[i] << separator;
+    } else if (auto vec = std::get_if<vec1f>(&attr)) {
+      f_out << (*vec)[i] << separator;
+    }
+  }
 }
 
 void GDALWriterNode::process() {
