@@ -50,6 +50,27 @@ void CSVLoaderNode::process()
   output("points").set(points);
 }
 
+void CSVSegmentLoaderNode::process()
+{
+  PointCollection points;
+
+  std::ifstream f_in(manager.substitute_globals(filepath));
+  float px, py, pz;
+  size_t i = 0;
+  std::string header;
+  std::getline(f_in, header);
+  while (f_in >> px >> py >> pz)
+  {
+    if (i++ % thin_nth == 0)
+    {
+      points.push_back({px, py, pz});
+    }
+  }
+  f_in.close();
+
+  output("points").set(points);
+}
+
 void CSVWriterNode::process()
 {
   auto& geom_term = input("geometry");
@@ -90,7 +111,11 @@ void CSVWriterNode::process()
   }
   if (require_attributes_) {
     for (auto& term : poly_input("attributes").sub_terminals()) {
-      f_out << term->get_full_name() << separator;
+      auto search = output_attribute_names.find(term->get_full_name());
+      if(search != output_attribute_names.end()) {
+        if(!search->second.empty())
+          f_out << search->second << separator;
+      }
     }
   }
   f_out << "\n"; // end of header line
@@ -135,14 +160,19 @@ void CSVWriterNode::process()
 
 void CSVWriterNode::print_attributes(std::ofstream& f_out, const size_t& i) {
   for (auto& term : poly_input("attributes").sub_terminals()) {
-    if (term->accepts_type(typeid(bool))) {
-      f_out << term->get<bool>(i) << separator;
-    } else if (term->accepts_type(typeid(float))) {
-      f_out << term->get<float>(i) << separator;
-    } else if (term->accepts_type(typeid(int))) {
-      f_out << term->get<int>(i) << separator;
-    } else if (term->accepts_type(typeid(std::string))) {
-      f_out << term->get<std::string>(i) << separator;
+    auto search = output_attribute_names.find(term->get_full_name());
+    if(search != output_attribute_names.end()) {
+      if(!search->second.empty()) {
+        if (term->accepts_type(typeid(bool))) {
+          f_out << term->get<bool>(i) << separator;
+        } else if (term->accepts_type(typeid(float))) {
+          f_out << term->get<float>(i) << separator;
+        } else if (term->accepts_type(typeid(int))) {
+          f_out << term->get<int>(i) << separator;
+        } else if (term->accepts_type(typeid(std::string))) {
+          f_out << term->get<std::string>(i) << separator;
+        }
+      }
     }
   }
 }
@@ -160,6 +190,15 @@ void CSVWriterNode::print_collection_attributes(std::ofstream& f_out, const attr
     }
   }
 }
+
+void CSVWriterNode::on_receive(gfMultiFeatureInputTerminal& it) {
+  key_options.clear();
+  if(&it == &poly_input("attributes")) {
+    for(auto sub_term : it.sub_terminals()) {
+      key_options.push_back(sub_term->get_full_name());
+    }
+  }
+};
 
 void GDALWriterNode::process() {
 

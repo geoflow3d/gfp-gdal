@@ -190,11 +190,15 @@ public:
   void process();
 };
 
+
 class CSVWriterNode : public Node
 {
   std::string filepath = "out.csv";
   std::string separator = ";";
   bool require_attributes_{true};
+
+  vec1s key_options;
+  StrMap output_attribute_names;
 
 public:
   using Node::Node;
@@ -205,7 +209,7 @@ public:
 
     add_param(ParamPath(filepath, "filepath", "File path"));
     add_param(ParamBool(require_attributes_, "require_attributes", "Only run when attributes input is connected"));
-
+    add_param(ParamStrMap(output_attribute_names, key_options, "output_attribute_names", "Output attribute names"));
   }
   void process();
 
@@ -226,6 +230,9 @@ public:
       return vector_input("geometry").has_data();
     }
   }
+
+  void on_receive(gfMultiFeatureInputTerminal& it) override;
+
 };
 
 } // namespace geoflow::nodes::gdal
