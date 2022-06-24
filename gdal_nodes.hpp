@@ -194,6 +194,7 @@ class CSVSegmentLoaderNode : public Node
 {
   std::string filepaths = "";
   std::string separator = " ";
+  std::string aggregate_name = "BuildingID";
 
 public:
   using Node::Node;
@@ -211,6 +212,7 @@ class CSVWriterNode : public Node
   std::string filepath = "out.csv";
   std::string separator = " ";
   bool require_attributes_{true};
+  int precision = 3;
 
   vec1s key_options;
   StrMap output_attribute_names;
@@ -224,6 +226,7 @@ public:
 
     add_param(ParamPath(filepath, "filepath", "File path"));
     add_param(ParamBool(require_attributes_, "require_attributes", "Only run when attributes input is connected"));
+    add_param(ParamInt(precision, "precision", "Number of decimals for floating points"));
     add_param(ParamStrMap(output_attribute_names, key_options, "output_attribute_names", "Output attribute names"));
   }
   void process();

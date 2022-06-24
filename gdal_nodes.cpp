@@ -54,15 +54,15 @@ void CSVSegmentLoaderNode::process()
 {
   // SegmentCollection isegments;
   std::unordered_map<std::string, SegmentCollection> segments_by_bid;
-  for (auto& filepath : files) {
-    std::ifstream f_in(manager.substitute_globals(filepaths));
+  for (auto filepath : split_string(manager.substitute_globals(filepaths), " ")) {
+    std::ifstream f_in(filepath);
     float px, py, pz;
     size_t i = 0;
     std::vector<std::string> columns, attr_names;
-    std::string header;
-    std::getline(f_in, header);
+    std::string line;
+    std::getline(f_in, line);
     std::istringstream headerss;
-    headerss.str(header);
+    headerss.str(line);
     for (std::string column; std::getline(headerss, column, *separator.c_str()); ) {
       columns.push_back(column);
       if( !(
@@ -79,35 +79,41 @@ void CSVSegmentLoaderNode::process()
     }
     size_t NC = columns.size();
     float xs, ys, zs, xe, ye, ze;
-    while (!f_in.eof()) {
+    while (std::getline(f_in, line)) {
+      std::istringstream line_;
+      line_.str(line);
+      std::vector<std::string> vals;
+      for (std::string ele; std::getline(line_, ele, *separator.c_str()); ) {
+        vals.push_back(ele);
+      }
       SegmentCollection* segments;
       for (size_t i=0; i<NC; ++i ) {
+        if(columns[i]==aggregate_name) {
+          auto result = segments_by_bid.emplace(std::make_pair(vals[i], SegmentCollection()));
+          segments = &((*result.first).second);
+          if(result.second) { // was just created; we need to initialise the attribute vecs
+            for (auto& name : attr_names) {
+              segments->add_attribute_vec1s(name);
+            }
+          } 
+        }
+      }
+      for (size_t i=0; i<NC; ++i ) {
         if (columns[i] == "x_start") {
-          f_in >> xs;
+          xs = stof(vals[i]);
         } else if (columns[i] == "y_start") {
-          f_in >> ys;
+          ys = stof(vals[i]);
         } else if (columns[i] == "z_start") {
-          f_in >> zs;
+          zs = stof(vals[i]);
         } else if (columns[i] == "x_end") {
-          f_in >> xe;
+          xe = stof(vals[i]);
         } else if (columns[i] == "y_end") {
-          f_in >> ye;
+          ye = stof(vals[i]);
         } else if (columns[i] == "z_end") {
-          f_in >> ze;
+          ze = stof(vals[i]);
         } else {
-          std::string s;
-          f_in >> s;
-          if(columns[i]=="buildingID") {
-            auto result = segments_by_bid.emplace(std::make_pair(s, SegmentCollection()));
-            segments = &(result.first);
-            if(result.second()) { // was just created; we need to initialise the attribute vecs
-              for (auto& name : attr_names) {
-                segments->add_attribute_vec1s(name);
-              }
-            } 
-          }
           auto* attr = segments->get_attribute_vec1s(columns[i]);
-          (*attr).push_back(s);
+          (*attr).push_back(vals[i]);
         }
       }
       segments->push_back({
@@ -115,9 +121,9 @@ void CSVSegmentLoaderNode::process()
         arr3f({xe, ye, ze})
       });
       // eat up \n so that we reach eof after reading last line
-      f_in.get();
-      f_in.get();
-      f_in.get();
+      // f_in.get();
+      // f_in.get();
+      // f_in.get();
     }
     f_in.close();
   }
@@ -138,7 +144,7 @@ void CSVWriterNode::process()
   auto parent_path = fs::path(file_path).parent_path();
   if (!parent_path.empty()) fs::create_directories(parent_path);
   std::ofstream f_out(file_path);
-  f_out << std::fixed << std::setprecision(2);
+  f_out << std::fixed << std::setprecision(precision);
 
   if (geom_term.is_connected_type(typeid(PointCollection))) {
     f_out << "x" << separator;
