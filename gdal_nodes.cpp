@@ -54,6 +54,7 @@ void CSVSegmentLoaderNode::process()
 {
   // SegmentCollection isegments;
   std::unordered_map<std::string, SegmentCollection> segments_by_bid;
+  bool found_offset = manager.data_offset.has_value();
   for (auto filepath : split_string(manager.substitute_globals(filepaths), " ")) {
     std::ifstream f_in(filepath);
     float px, py, pz;
@@ -116,9 +117,15 @@ void CSVSegmentLoaderNode::process()
           (*attr).push_back(vals[i]);
         }
       }
+      if(!found_offset) {
+        found_offset = true;
+        (*manager.data_offset)[0] = xs;
+        (*manager.data_offset)[1] = ys;
+        (*manager.data_offset)[2] = zs;
+      }
       segments->push_back({
-        arr3f({xs, ys, zs}),
-        arr3f({xe, ye, ze})
+        arr3f({xs - float((*manager.data_offset)[0]), ys - float((*manager.data_offset)[1]), zs - float((*manager.data_offset)[2])}),
+        arr3f({xe - float((*manager.data_offset)[0]), ye - float((*manager.data_offset)[1]), ze - float((*manager.data_offset)[2])})
       });
       // eat up \n so that we reach eof after reading last line
       // f_in.get();

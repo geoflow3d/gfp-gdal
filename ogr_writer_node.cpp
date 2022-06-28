@@ -159,9 +159,10 @@ void OGRWriterNode::process()
       //see if we need to rename this attribute
       auto search = output_attribute_names.find(name);
       if(search != output_attribute_names.end()) {
-        //ignore if the new name is an empty string
-        if(search->second.size()!=0)
+        if(search->second.size()!=0) //ignore if the new name is an empty string
           name = search->second;
+      } else if(only_output_mapped_attrs_) {
+        continue; // skip attribute creation if not added by user in output_attribute_names
       }
       if (term->accepts_type(typeid(bool))) {
         OGRFieldDefn oField(name.c_str(), OFTInteger);
@@ -247,6 +248,8 @@ void OGRWriterNode::process()
         //ignore if the new name is an empty string
         if(search->second.size()!=0)
           name = search->second;
+      } else if(only_output_mapped_attrs_) {
+        continue; // skip attribute creation if not added by user in output_attribute_names
       }
       // attr_id_map[geoflow attribute name] = gdal field index
       for (int i=0; i < fcnt; i++) {
@@ -282,6 +285,13 @@ void OGRWriterNode::process()
     for (auto& term : poly_input("attributes").sub_terminals()) {
       if (!term->get_data_vec()[i].has_value()) continue;
       auto tname = term->get_full_name();
+      
+      // skip if not added by user in output_attribute_names
+      auto search = output_attribute_names.find(tname);
+      if(only_output_mapped_attrs_ && search == output_attribute_names.end()) {
+        continue;
+      }
+
       if (term->accepts_type(typeid(bool))) {
         auto& val = term->get<const bool&>(i);
         poFeature->SetField(attr_id_map[tname], val);
