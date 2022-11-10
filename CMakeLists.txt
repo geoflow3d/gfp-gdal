@@ -18,7 +18,7 @@ if (GEOS_FOUND)
 endif()
 
 # GDAL
-find_package( GDAL )
+find_package( GDAL 3.5 REQUIRED )
 include_directories(${GDAL_INCLUDE_DIR})
 
 set(GF_PLUGIN_NAME ${PROJECT_NAME})

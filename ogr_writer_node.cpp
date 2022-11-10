@@ -39,9 +39,10 @@ OGRPolygon OGRWriterNode::create_polygon(const LinearRing& lr) {
   OGRLinearRing ogrring;
   // set exterior ring
   for (auto& g : lr) {
-    ogrring.addPoint(g[0] + (*manager.data_offset)[0],
-                      g[1] + (*manager.data_offset)[1],
-                      g[2] + (*manager.data_offset)[2]);
+    auto coord_t = manager.coord_transform_rev(g[0], g[1], g[2]);
+    ogrring.addPoint(coord_t[0],
+                     coord_t[1],
+                     coord_t[2]);
   }
   ogrring.closeRings();
   ogrpoly.addRing(&ogrring);
@@ -50,9 +51,10 @@ OGRPolygon OGRWriterNode::create_polygon(const LinearRing& lr) {
   for (auto& iring : lr.interior_rings()) {
     OGRLinearRing ogr_iring;
     for (auto& g : iring) {
-      ogr_iring.addPoint(g[0] + (*manager.data_offset)[0],
-                          g[1] + (*manager.data_offset)[1],
-                          g[2] + (*manager.data_offset)[2]);
+      auto coord_t = manager.coord_transform_rev(g[0], g[1], g[2]);
+      ogr_iring.addPoint(coord_t[0],
+                         coord_t[1],
+                         coord_t[2]);
     }
     ogr_iring.closeRings();
     ogrpoly.addRing(&ogr_iring);
@@ -146,8 +148,12 @@ void OGRWriterNode::process()
 
   if (layer == nullptr) {
     OGRSpatialReference oSRS;
-    oSRS.importFromEPSG(epsg);
+    oSRS.SetFromUserInput(srs.c_str());
+    // oSRS.SetAxisMappingStrategy(OAMS_AUTHORITY_COMPLIANT);
     layer = dataSource->CreateLayer(layername.c_str(), &oSRS, wkbType, lco);
+
+    // We set normalise_for_visualisation to true, becuase it seems that GDAL expects as the first coordinate easting/longitude when constructing geometries
+    manager.set_rev_crs_transform(srs.c_str(), true);
 
     // Create GDAL feature attributes
     for (auto& term : poly_input("attributes").sub_terminals()) {
@@ -332,9 +338,10 @@ void OGRWriterNode::process()
         OGRLineString ogrlinestring;
         const LineString &ls = geom_term.get<LineString>(i);
         for (auto &g : ls) {
-          ogrlinestring.addPoint(g[0] + (*manager.data_offset)[0],
-                                 g[1] + (*manager.data_offset)[1],
-                                 g[2] + (*manager.data_offset)[2]);
+          auto coord_t = manager.coord_transform_rev(g[0], g[1], g[2]);
+          ogrlinestring.addPoint(coord_t[0],
+                                 coord_t[1],
+                                 coord_t[2]);
         }
         poFeature->SetGeometry(&ogrlinestring);
         poFeatures.push_back(poFeature);
@@ -348,9 +355,10 @@ void OGRWriterNode::process()
             OGRPolygon ogrpoly = OGRPolygon();
             OGRLinearRing ring = OGRLinearRing();
             for (auto &vertex : triangle) {
-              ring.addPoint(vertex[0] + (*manager.data_offset)[0],
-                            vertex[1] + (*manager.data_offset)[1],
-                            vertex[2] + (*manager.data_offset)[2]);
+              auto coord_t = manager.coord_transform_rev(vertex[0], vertex[1], vertex[2]);
+              ring.addPoint(coord_t[0],
+                            coord_t[1],
+                            coord_t[2]);
             }
             ring.closeRings();
             ogrpoly.addRing(&ring);
@@ -375,9 +383,10 @@ void OGRWriterNode::process()
             OGRPolygon    ogrpoly = OGRPolygon();
             OGRLinearRing ring    = OGRLinearRing();
             for (auto& vertex : triangle) {
-              ring.addPoint(vertex[0] + (*manager.data_offset)[0],
-                            vertex[1] + (*manager.data_offset)[1],
-                            vertex[2] + (*manager.data_offset)[2]);
+              auto coord_t = manager.coord_transform_rev(vertex[0], vertex[1], vertex[2]);
+              ring.addPoint(coord_t[0],
+                            coord_t[1],
+                            coord_t[2]);
             }
             ring.closeRings();
             ogrpoly.addRing(&ring);

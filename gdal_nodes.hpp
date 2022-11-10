@@ -59,7 +59,7 @@ public:
 
 class OGRWriterNode : public Node
 {
-  int epsg = 7415;
+  std::string srs = "EPSG:7415";
   std::string conn_string_ = "out";
   std::string gdaldriver_ = "GPKG";
   std::string layername_ = "geom";
@@ -83,7 +83,7 @@ public:
     add_poly_input("attributes", {typeid(bool), typeid(int), typeid(float), typeid(std::string), typeid(Date), typeid(Time), typeid(DateTime)}, false);
 
     add_param(ParamPath(conn_string_, "filepath", "Filepath or database connection string"));
-    add_param(ParamInt(epsg, "epsg", "EPSG"));
+    add_param(ParamText(srs, "CRS", "Coordinate reference system text. Can be EPSG code, WKT definition, etc."));
     add_param(ParamInt(transaction_batch_size_, "transaction_batch_size_", "Trnasaction batch size"));
     add_param(ParamString(gdaldriver_, "gdaldriver", "GDAL driver (format), eg GPKG or PostgreSQL"));
     add_param(ParamString(layername_, "layername", "Layer name"));

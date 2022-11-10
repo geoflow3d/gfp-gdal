@@ -145,12 +145,19 @@ void OGRLoaderNode::process()
     }
   }
 
-  bool found_offset = manager.data_offset.has_value();
+  // bool found_offset = manager.data_offset.has_value();
   poLayer->ResetReading();
 
   
   if ((poLayer->GetFeatureCount()) < feature_select || feature_select < 0)
     throw gfIOError("Illegal feature_select value");
+
+  char *pszWKT = NULL;
+  OGRSpatialReference* layerSRS = poLayer->GetSpatialRef();
+  layerSRS->exportToWkt( &pszWKT );
+  // printf( "Layer SRS: \n %s\n", pszWKT );
+  manager.set_fwd_crs_transform(pszWKT);
+  CPLFree(pszWKT);
 
   size_t fid{1};
   for (auto &poFeature : poLayer)
@@ -166,22 +173,19 @@ void OGRLoaderNode::process()
 
       if (
           poGeometry->getGeometryType() == wkbLineString25D || poGeometry->getGeometryType() == wkbLineStringZM ||
-          poGeometry->getGeometryType() == wkbLineString)
+          poGeometry->getGeometryType() == wkbLineString
+         )
       {
         OGRLineString *poLineString = poGeometry->toLineString();
 
         LineString line_string;
         for (auto &poPoint : poLineString)
         {
-          if (!found_offset)
-          {
-            manager.data_offset = {poPoint.getX(), poPoint.getY(), 0};
-            found_offset = true;
-          }
-          std::array<float, 3> p = {
-              float(poPoint.getX() - (*manager.data_offset)[0]),
-              float(poPoint.getY() - (*manager.data_offset)[1]),
-              float(poPoint.getZ() - (*manager.data_offset)[2]) + base_elevation};
+          std::array<float, 3> p = manager.coord_transform_fwd(
+              poPoint.getX(),
+              poPoint.getY(),
+              poPoint.getZ() + base_elevation
+            );
           line_string.push_back(p);
         }
         line_strings.push_back(line_string);
@@ -205,12 +209,11 @@ void OGRLoaderNode::process()
         for (size_t i = 0; i < ogr_ering->getNumPoints() - 1; ++i)
         {
           ogr_ering->getPoint(i, &poPoint);
-          if (!found_offset)
-          {
-            manager.data_offset = {poPoint.getX(), poPoint.getY(), 0};
-            found_offset = true;
-          }
-          std::array<float, 3> p = {float(poPoint.getX() - (*manager.data_offset)[0]), float(poPoint.getY() - (*manager.data_offset)[1]), float(poPoint.getZ() - (*manager.data_offset)[2]) + base_elevation};
+          std::array<float, 3> p = manager.coord_transform_fwd(
+              poPoint.getX(),
+              poPoint.getY(),
+              poPoint.getZ() + base_elevation
+            );
           gf_polygon.push_back(p);
         }
         // also read the interior rings (holes)
@@ -225,7 +228,11 @@ void OGRLoaderNode::process()
           for (size_t j = 0; j < ogr_iring->getNumPoints() - 1; ++j)
           {
             ogr_iring->getPoint(j, &poPoint);
-            std::array<float, 3> p = {float(poPoint.getX() - (*manager.data_offset)[0]), float(poPoint.getY() - (*manager.data_offset)[1]), float(poPoint.getZ() - (*manager.data_offset)[2]) + base_elevation};
+            std::array<float, 3> p = manager.coord_transform_fwd(
+              poPoint.getX(),
+              poPoint.getY(),
+              poPoint.getZ() + base_elevation
+            );
             gf_iring.push_back(p);
           }
           gf_polygon.interior_rings().push_back(gf_iring);
