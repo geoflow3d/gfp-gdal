@@ -112,7 +112,7 @@ void OGRWriterNode::process()
   if (dataSource == nullptr) {
     throw(gfException("Starting database connection failed."));
   }
-  if (dataSource->StartTransaction() != OGRERR_NONE) {
+  if (do_transactions_) if (dataSource->StartTransaction() != OGRERR_NONE) {
     throw(gfException("Starting database transaction failed.\n"));
   }
 
@@ -275,10 +275,10 @@ void OGRWriterNode::process()
       }
     }
   }
-  if (dataSource->CommitTransaction() != OGRERR_NONE) {
+  if (do_transactions_) if (dataSource->CommitTransaction() != OGRERR_NONE) {
     throw(gfException("Creating database transaction failed.\n"));
   }
-  if (dataSource->StartTransaction() != OGRERR_NONE) {
+  if (do_transactions_) if (dataSource->StartTransaction() != OGRERR_NONE) {
     throw(gfException("Starting database transaction failed.\n"));
   }
 
@@ -495,16 +495,16 @@ void OGRWriterNode::process()
     }
 
     if (i % transaction_batch_size_ == 0) {
-      if (dataSource->CommitTransaction() != OGRERR_NONE) {
+      if (do_transactions_) if (dataSource->CommitTransaction() != OGRERR_NONE) {
         throw(gfException("Committing features to database failed.\n"));
       }
-      if (dataSource->StartTransaction() != OGRERR_NONE) {
+      if (do_transactions_) if (dataSource->StartTransaction() != OGRERR_NONE) {
         throw(gfException("Starting database transaction failed.\n"));
       }
     }
   }
 
-  if (dataSource->CommitTransaction() != OGRERR_NONE) {
+  if (do_transactions_) if (dataSource->CommitTransaction() != OGRERR_NONE) {
     throw(gfException("Committing features to database failed.\n"));
   }
 

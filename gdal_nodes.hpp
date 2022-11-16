@@ -68,6 +68,7 @@ class OGRWriterNode : public Node
   bool create_directories_ = true;
   bool require_attributes_ = true;
   bool only_output_mapped_attrs_ = false;
+  bool do_transactions_ = false;
   int transaction_batch_size_ = 1000;
 
   vec1s key_options;
@@ -92,6 +93,7 @@ public:
     add_param(ParamBool(require_attributes_, "require_attributes", "Only run when attributes input is connected"));
     add_param(ParamBool(create_directories_, "create_directories", "Create directories to write output file"));
     add_param(ParamBool(only_output_mapped_attrs_, "only_output_mapped_attrs", "Only output those attributes selected under Output attribute names"));
+    add_param(ParamBool(do_transactions_, "do_transactions", "Attempt to use OGR transactions (for large number of feature writing)"));
     add_param(ParamStrMap(output_attribute_names, key_options, "output_attribute_names", "Output attribute names"));
 
     if (GDALGetDriverCount() == 0)
