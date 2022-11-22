@@ -140,12 +140,17 @@ namespace geoflow::nodes::gfp_geos {
 
         for (size_t i=0; i<ipolygons.size(); ++i) {
             auto& lr = ipolygons.get<LinearRing>(i);
+
+            if( lr.size() < 3 ) {
+                std::cout << "feature skipped with less than 3 points\n";
+                opolygons.push_back(lr);
+            }
             
             GEOSGeometry* g_polygon = nullptr;
             to_geos_polygon(lr, g_polygon);
 
             if(GEOSisValid_r(gc, g_polygon)!=1) {
-                std::cout << "feature not simplified\n";
+                std::cout << "feature not valid\n";
             }
 
             GEOSGeometry* simplified_geom = GEOSSimplify_r(gc, g_polygon, double(tolerance));
