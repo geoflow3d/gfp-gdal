@@ -143,7 +143,8 @@ namespace geoflow::nodes::gfp_geos {
 
             if( lr.size() < 3 ) {
                 std::cout << "feature skipped with less than 3 points\n";
-                opolygons.push_back(lr);
+                if (output_failures) opolygons.push_back(lr);
+                continue;
             }
             
             GEOSGeometry* g_polygon = nullptr;
@@ -151,25 +152,34 @@ namespace geoflow::nodes::gfp_geos {
 
             if(GEOSisValid_r(gc, g_polygon)!=1) {
                 std::cout << "feature not valid\n";
+                GEOSGeom_destroy_r(gc, g_polygon);
+                if (output_failures) opolygons.push_back(lr);
+                continue;
             }
 
             GEOSGeometry* simplified_geom = GEOSSimplify_r(gc, g_polygon, double(tolerance));
-            orient_polygon(simplified_geom, CCW);
+            if(GEOSisValid_r(gc, simplified_geom)!=1) {
+                std::cout << "feature not valid after simplify\n";
+                GEOSGeom_destroy_r(gc, g_polygon);
+                if (output_failures) opolygons.push_back(lr);
+                continue;
+            }
+            if (orient_after_simplify) orient_polygon(simplified_geom, CCW);
 
             // check if the simplified geometry is valid and has vertices
             unsigned int size;
             const GEOSGeometry* g_ring = GEOSGetExteriorRing_r(gc, simplified_geom);
             const GEOSCoordSequence* g_coord_seq = GEOSGeom_getCoordSeq_r(gc, g_ring);
             GEOSCoordSeq_getSize_r(gc, g_coord_seq, &size);
-            if(GEOSisValid_r(gc, simplified_geom)!=1 || size == 0) {
-                std::cout << "feature not simplified\n";
-                opolygons.push_back(lr);
+            if(size == 0) {
+                std::cout << "feature size 0 after simplify\n";
+                if (output_failures) opolygons.push_back(lr);
             } else {
                 opolygons.push_back( from_geos_polygon(simplified_geom) );
             }
 
             GEOSGeom_destroy_r(gc, g_polygon);
-            // GEOSGeom_destroy_r(gc, simplified_geom);
+            GEOSGeom_destroy_r(gc, simplified_geom);
         }
         GEOS_finish_r(gc);
     }

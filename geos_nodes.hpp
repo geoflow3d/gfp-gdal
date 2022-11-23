@@ -22,12 +22,16 @@ class PolygonSimplifyGEOSNode:public Node {
   public:
   using Node::Node;
   float tolerance = 0.01;
+  bool output_failures = true;
+  bool orient_after_simplify = true;
 
   void init() {
     add_vector_input("polygons", typeid(LinearRing));
     add_vector_output("simplified_polygons", typeid(LinearRing));
 
     add_param(ParamBoundedFloat(tolerance, 0, 10, "tolerance",  "tolerance"));   
+    add_param(ParamBool(output_failures, "output_failures",  "output polygons that could not be simplified"));   
+    add_param(ParamBool(orient_after_simplify, "orient_after_simplify",  "Orient polygons after simplification"));   
   }
   void process();
 };
