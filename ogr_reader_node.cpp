@@ -149,8 +149,8 @@ void OGRLoaderNode::process()
   poLayer->ResetReading();
 
   
-  if ((poLayer->GetFeatureCount()) < feature_select || feature_select < 0)
-    throw gfIOError("Illegal feature_select value");
+  // if ((poLayer->GetFeatureCount()) < feature_select || feature_select < 0)
+  //   throw gfIOError("Illegal feature_select value");
 
   char *pszWKT = NULL;
   OGRSpatialReference* layerSRS = poLayer->GetSpatialRef();
@@ -159,10 +159,20 @@ void OGRLoaderNode::process()
   manager.set_fwd_crs_transform(pszWKT);
   CPLFree(pszWKT);
 
+  if (attribute_filter_.size()) {
+    auto attribute_filter = manager.substitute_globals(attribute_filter_);
+    auto error_code = poLayer->SetAttributeFilter(attribute_filter.c_str());
+    if (OGRERR_NONE != error_code) {
+      throw(gfIOError("Invalid attribute filter: OGRErr="+std::to_string(error_code)+", filter="+attribute_filter));
+    }
+  }
+
   size_t fid{1};
-  for (auto &poFeature : poLayer)
+  OGRFeature *poFeature;
+  while( (poFeature = poLayer->GetNextFeature()) != NULL )
+  // for (auto &poFeature : poLayer)
   {
-    if(feature_select != 0 && fid++ != feature_select) continue;
+    // if(feature_select != 0 && fid++ != feature_select) continue;
 
     // read feature geometry
     OGRGeometry *poGeometry;
