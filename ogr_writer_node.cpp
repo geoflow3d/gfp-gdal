@@ -146,14 +146,15 @@ void OGRWriterNode::process()
   auto geom_size = geom_term.size();
   std::cout << "creating " << geom_size << " geometry features\n";
 
+  auto CRS = manager.substitute_globals(srs.c_str());
   if (layer == nullptr) {
     OGRSpatialReference oSRS;
-    oSRS.SetFromUserInput(srs.c_str());
+    oSRS.SetFromUserInput(CRS.c_str());
     // oSRS.SetAxisMappingStrategy(OAMS_AUTHORITY_COMPLIANT);
     layer = dataSource->CreateLayer(layername.c_str(), &oSRS, wkbType, lco);
 
     // We set normalise_for_visualisation to true, becuase it seems that GDAL expects as the first coordinate easting/longitude when constructing geometries
-    manager.set_rev_crs_transform(srs.c_str(), true);
+    manager.set_rev_crs_transform(CRS.c_str(), true);
 
     // Create GDAL feature attributes
     for (auto& term : poly_input("attributes").sub_terminals()) {
