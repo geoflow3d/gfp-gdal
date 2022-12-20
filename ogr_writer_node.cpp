@@ -99,9 +99,16 @@ void OGRWriterNode::process()
     throw(gfException(gdaldriver + " driver not available"));
   }
 
-  if(gdaldriver != "PostgreSQL" && create_directories_) {
-    if(!fs::create_directories(fs::path(connstr).parent_path()))
-      std::cout << "Unable to create directories " << connstr << std::endl;
+  if(gdaldriver != "PostgreSQL"){
+    auto fpath = fs::path(connstr);
+    if(overwrite_file_) {
+      if(fs::exists(fpath))
+        fs::remove(fpath);
+    }
+    if (create_directories_) {
+      if(!fs::create_directories(fpath.parent_path()))
+        std::cout << "Unable to create directories " << connstr << std::endl;
+    }
   }
 
   GDALDataset* dataSource = nullptr;

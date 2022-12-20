@@ -24,6 +24,7 @@ class OGRLoaderNode : public Node
 {
   int layer_count = 0;
   int layer_id = 0;
+  std::string layer_name_ = "";
   std::string attribute_filter_ = "";
   float base_elevation = 0;
 
@@ -48,6 +49,7 @@ public:
 
     add_param(ParamPath(filepath, "filepath", "File path"));
     add_param(ParamFloat(base_elevation, "base_elevation", "Base elevation"));
+    add_param(ParamString(layer_name_, "layer_name", "Layer name (takes precedence over layer ID)"));
     add_param(ParamInt(layer_id, "layer_id", "Layer ID"));
     add_param(ParamString(attribute_filter_, "attribute_filter", "Load only features that satisfy this condition"));
 
@@ -65,6 +67,7 @@ class OGRWriterNode : public Node
   std::string layername_ = "geom";
   // bool overwrite_dataset_ = false;
   bool overwrite_layer_ = false;
+  bool overwrite_file_ = false;
   bool create_directories_ = true;
   bool require_attributes_ = true;
   bool only_output_mapped_attrs_ = false;
@@ -89,7 +92,8 @@ public:
     add_param(ParamString(gdaldriver_, "gdaldriver", "GDAL driver (format), eg GPKG or PostgreSQL"));
     add_param(ParamString(layername_, "layername", "Layer name"));
     // add_param(ParamBool(overwrite_dataset_, "overwrite_dataset", "Overwrite dataset if it exists"));
-    add_param(ParamBool(overwrite_layer_, "overwrite", "Overwrite layer. Otherwise data is appended."));
+    add_param(ParamBool(overwrite_layer_, "overwrite_layer", "Overwrite layer. Otherwise data is appended."));
+    add_param(ParamBool(overwrite_file_, "overwrite_file", "Overwrite entire file regardless of any layers."));
     add_param(ParamBool(require_attributes_, "require_attributes", "Only run when attributes input is connected"));
     add_param(ParamBool(create_directories_, "create_directories", "Create directories to write output file"));
     add_param(ParamBool(only_output_mapped_attrs_, "only_output_mapped_attrs", "Only output those attributes selected under Output attribute names"));

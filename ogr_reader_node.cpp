@@ -75,11 +75,31 @@ void OGRLoaderNode::process()
     throw(gfException("Open failed on " + manager.substitute_globals(filepath)));
   layer_count = poDS->GetLayerCount();
   std::cout << "Layer count: " << layer_count << "\n";
-  if (layer_id >= layer_count) {
-    throw(gfException("Illegal layer ID! Layer ID must be less than the layer count."));
-  } else if (layer_id < 0) {
-    throw(gfException("Illegal layer ID! Layer ID cannot be negative."));
+
+  OGRLayer *poLayer;
+  
+  auto layer_name = manager.substitute_globals(layer_name_).c_str();
+  poLayer = poDS->GetLayerByName( layer_name );
+  if (poLayer == nullptr) {
+    if (layer_id >= layer_count) {
+      throw(gfException("Illegal layer ID! Layer ID must be less than the layer count."));
+    } else if (layer_id < 0) {
+      throw(gfException("Illegal layer ID! Layer ID cannot be negative."));
+    }
+    poLayer = poDS->GetLayer( layer_id) ;
+    // throw(gfException("Could not get the selected layer by name=" + layer_name));
   }
+  if (poLayer == nullptr)
+    throw(gfException("Could not get the selected layer "));
+
+
+  std::cout << "Layer '" << poLayer->GetName() << "' feature count: " << poLayer->GetFeatureCount() << "\n";
+  geometry_type = poLayer->GetGeomType();
+  geometry_type_name = OGRGeometryTypeToName(geometry_type);
+  std::cout << "Layer geometry type: " << geometry_type_name << "\n";
+
+  auto layer_def = poLayer->GetLayerDefn();
+  auto field_count = layer_def->GetFieldCount();
 
   // Set up vertex data (and buffer(s)) and attribute pointers
   // LineStringCollection line_strings;
@@ -89,18 +109,6 @@ void OGRLoaderNode::process()
   
   auto &is_valid = vector_output("is_valid");
   auto &area = vector_output("area");
-
-  OGRLayer *poLayer;
-  poLayer = poDS->GetLayer(layer_id);
-  if (poLayer == nullptr)
-    throw(gfException("Could not get the selected layer (ID): " + std::to_string(layer_id)));
-  std::cout << "Layer " << layer_id << " feature count: " << poLayer->GetFeatureCount() << "\n";
-  geometry_type = poLayer->GetGeomType();
-  geometry_type_name = OGRGeometryTypeToName(geometry_type);
-  std::cout << "Layer geometry type: " << geometry_type_name << "\n";
-
-  auto layer_def = poLayer->GetLayerDefn();
-  auto field_count = layer_def->GetFieldCount();
 
   std::unordered_map<std::string,int> fieldNameMap;
   for (size_t i = 0; i < field_count; ++i)
