@@ -27,6 +27,7 @@ class OGRLoaderNode : public Node
   std::string layer_name_ = "";
   std::string attribute_filter_ = "";
   float base_elevation = 0;
+  bool output_fid_ = false;
 
   std::string filepath = "";
 
@@ -48,6 +49,7 @@ public:
     add_poly_output("attributes", {typeid(bool), typeid(int), typeid(float), typeid(std::string), typeid(Date), typeid(Time), typeid(DateTime)});
 
     add_param(ParamPath(filepath, "filepath", "File path"));
+    add_param(ParamBool(output_fid_, "output_fid", "Output attribute named 'OGR_FID' containing the OGR feature ID's"));
     add_param(ParamFloat(base_elevation, "base_elevation", "Base elevation"));
     add_param(ParamString(layer_name_, "layer_name", "Layer name (takes precedence over layer ID)"));
     add_param(ParamInt(layer_id, "layer_id", "Layer ID"));

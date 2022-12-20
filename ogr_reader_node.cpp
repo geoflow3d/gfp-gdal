@@ -37,7 +37,11 @@ void OGRLoaderNode::push_attributes(OGRFeature &poFeature, std::unordered_map<st
     }
     else if (mterm->accepts_type(typeid(int)))
     {
-      mterm->push_back(int(poFeature.GetFieldAsInteger64(name.c_str())));
+      if(name == "OGR_FID") {
+        mterm->push_back(int(poFeature.GetFID()));
+      } else {
+        mterm->push_back(int(poFeature.GetFieldAsInteger64(name.c_str())));
+      }
     }
     else if (mterm->accepts_type(typeid(float)))
     {
@@ -152,6 +156,9 @@ void OGRLoaderNode::process()
       // term.set(vec1f());
     }
   }
+
+  if(output_fid_)
+    auto &ogrfid_term = poly_output("attributes").add_vector("OGR_FID", typeid(int));
 
   // bool found_offset = manager.data_offset.has_value();
   poLayer->ResetReading();
