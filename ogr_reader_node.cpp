@@ -27,7 +27,7 @@ namespace fs = std::filesystem;
 namespace geoflow::nodes::gdal
 {
 
-void OGRLoaderNode::push_attributes(OGRFeature &poFeature, std::unordered_map<std::string,int>& fieldNameMap)
+void OGRLoaderNode::push_attributes(const OGRFeature &poFeature, std::unordered_map<std::string,int>& fieldNameMap)
 {
   for (auto &[name, mterm] : poly_output("attributes").sub_terminals())
   {
@@ -70,6 +70,50 @@ void OGRLoaderNode::push_attributes(OGRFeature &poFeature, std::unordered_map<st
       mterm->push_back(t);
     }
   }
+}
+
+void OGRLoaderNode::read_polygon(OGRPolygon* poPolygon) {
+  LinearRing gf_polygon;
+  // for(auto& poPoint : poPolygon->getExteriorRing()) {
+  OGRPoint poPoint;
+  auto ogr_ering = poPolygon->getExteriorRing();
+  
+  // ensure we output ccw exterior ring
+  if ( ogr_ering->isClockwise() ) {
+    ogr_ering->reverseWindingOrder();
+  }
+  for (size_t i = 0; i < ogr_ering->getNumPoints() - 1; ++i)
+  {
+    ogr_ering->getPoint(i, &poPoint);
+    std::array<float, 3> p = manager.coord_transform_fwd(
+        poPoint.getX(),
+        poPoint.getY(),
+        poPoint.getZ() + base_elevation
+      );
+    gf_polygon.push_back(p);
+  }
+  // also read the interior rings (holes)
+  for (size_t i = 0; i < poPolygon->getNumInteriorRings(); ++i) 
+  {
+    auto ogr_iring = poPolygon->getInteriorRing(i);
+    // ensure we output cw interior ring
+    if ( !ogr_iring->isClockwise() ) {
+      ogr_iring->reverseWindingOrder();
+    }
+    vec3f gf_iring;
+    for (size_t j = 0; j < ogr_iring->getNumPoints() - 1; ++j)
+    {
+      ogr_iring->getPoint(j, &poPoint);
+      std::array<float, 3> p = manager.coord_transform_fwd(
+        poPoint.getX(),
+        poPoint.getY(),
+        poPoint.getZ() + base_elevation
+      );
+      gf_iring.push_back(p);
+    }
+    gf_polygon.interior_rings().push_back(gf_iring);
+  }
+  vector_output("linear_rings").push_back(gf_polygon);
 }
 
 void OGRLoaderNode::process()
@@ -196,10 +240,7 @@ void OGRLoaderNode::process()
     if (poGeometry != nullptr) // FIXME: we should check if te layer geometrytype matches with this feature's geometry type. Messy because they can be a bit different eg. wkbLineStringZM and wkbLineString25D
     {
 
-      if (
-          poGeometry->getGeometryType() == wkbLineString25D || poGeometry->getGeometryType() == wkbLineStringZM ||
-          poGeometry->getGeometryType() == wkbLineString
-         )
+      if (wkbFlatten(poGeometry->getGeometryType()) == wkbLineString)
       {
         OGRLineString *poLineString = poGeometry->toLineString();
 
@@ -218,70 +259,31 @@ void OGRLoaderNode::process()
 
         push_attributes(*poFeature, fieldNameMap);
       }
-      else if (poGeometry->getGeometryType() == wkbPolygon25D || poGeometry->getGeometryType() == wkbPolygon || poGeometry->getGeometryType() == wkbPolygonZM || poGeometry->getGeometryType() == wkbPolygonM)
+      else if (wkbFlatten(poGeometry->getGeometryType()) == wkbPolygon)
       {
         OGRPolygon *poPolygon = poGeometry->toPolygon();
 
-        LinearRing gf_polygon;
-        // for(auto& poPoint : poPolygon->getExteriorRing()) {
-        OGRPoint poPoint;
-        auto ogr_ering = poPolygon->getExteriorRing();
-        
-        // ensure we output ccw exterior ring
-        if ( ogr_ering->isClockwise() ) {
-          ogr_ering->reverseWindingOrder();
-        }
-        for (size_t i = 0; i < ogr_ering->getNumPoints() - 1; ++i)
-        {
-          ogr_ering->getPoint(i, &poPoint);
-          std::array<float, 3> p = manager.coord_transform_fwd(
-              poPoint.getX(),
-              poPoint.getY(),
-              poPoint.getZ() + base_elevation
-            );
-          gf_polygon.push_back(p);
-        }
-        // also read the interior rings (holes)
-        for (size_t i = 0; i < poPolygon->getNumInteriorRings(); ++i) 
-        {
-          auto ogr_iring = poPolygon->getInteriorRing(i);
-          // ensure we output cw interior ring
-          if ( !ogr_iring->isClockwise() ) {
-            ogr_iring->reverseWindingOrder();
-          }
-          vec3f gf_iring;
-          for (size_t j = 0; j < ogr_iring->getNumPoints() - 1; ++j)
-          {
-            ogr_iring->getPoint(j, &poPoint);
-            std::array<float, 3> p = manager.coord_transform_fwd(
-              poPoint.getX(),
-              poPoint.getY(),
-              poPoint.getZ() + base_elevation
-            );
-            gf_iring.push_back(p);
-          }
-          gf_polygon.interior_rings().push_back(gf_iring);
-        }
-        // ring.erase(--ring.end());
-        // bg::model::polygon<point_type_3d> boost_poly;
-        // for (auto& p : ring) {
-        //   bg::append(boost_poly.outer(), point_type_3d(p[0], p[1], p[2]));
-        // }
-        // bg::unique(boost_poly);
-        // vec3f ring_dedup;
-        // for (auto& p : boost_poly.outer()) {
-        //   ring_dedup.push_back({float(bg::get<0>(p)), float(bg::get<1>(p)), float(bg::get<2>(p))}); //FIXME losing potential z...
-        // }
-        linear_rings.push_back(gf_polygon);
+        read_polygon(poPolygon);
         
         area.push_back(float(poPolygon->get_Area()));
         is_valid.push_back(bool(poPolygon->IsValid()));
 
         push_attributes(*poFeature, fieldNameMap);
-      }
-      else
+
+      } 
+      else if ( wkbFlatten(poGeometry->getGeometryType()) == wkbMultiPolygon ) 
       {
-        throw gfIOError("Unsupported geometry type (if multipolygon, please convert to single polygons)\n");
+        OGRMultiPolygon *poMultiPolygon = poGeometry->toMultiPolygon();
+        for (auto poly_it = poMultiPolygon->begin(); poly_it != poMultiPolygon->end(); ++poly_it) {
+          read_polygon(*poly_it);
+        
+          area.push_back(float((*poly_it)->get_Area()));
+          is_valid.push_back(bool((*poly_it)->IsValid()));
+
+          push_attributes(*poFeature, fieldNameMap);
+        }
+      } else {
+        throw gfIOError("Unsupported geometry type\n");
       }
     }
   }
@@ -297,22 +299,6 @@ void OGRLoaderNode::process()
     // output("linear_rings").set(linear_rings);
     std::cout << "pushed " << linear_rings.size() << " linear_ring features...\n";
   }
-
-  //    for(auto& [name, term] : poly_output("attributes").terminals) {
-  //      std::cout << "group_term " << name << "\n";
-  //      if (term->type == typeid(vec1f))
-  //        for (auto& val : term->get<vec1f>()) {
-  //          std::cout << "\t" << val << "\n";
-  //        }
-  //      if (term->type == typeid(vec1i))
-  //        for (auto& val : term->get<vec1i>()) {
-  //          std::cout << "\t" << val << "\n";
-  //        }
-  //      if (term->type == typeid(vec1s))
-  //        for (auto& val : term->get<vec1s>()) {
-  //          std::cout << "\t" << val << "\n";
-  //        }
-  //    }
 }
 
 } // namespace geoflow::nodes::gdal

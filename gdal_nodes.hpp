@@ -34,8 +34,9 @@ class OGRLoaderNode : public Node
   std::string geometry_type_name;
   OGRwkbGeometryType geometry_type;
 
-  void push_attributes(OGRFeature &poFeature, std::unordered_map<std::string,int>& fieldNameMap);
-
+  void push_attributes(const OGRFeature &poFeature, std::unordered_map<std::string,int>& fieldNameMap);
+  void read_polygon(OGRPolygon* poPolygon);
+  
 public:
   using Node::Node;
   void init()
