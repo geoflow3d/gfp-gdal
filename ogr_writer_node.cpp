@@ -102,8 +102,13 @@ void OGRWriterNode::process()
   if(gdaldriver != "PostgreSQL"){
     auto fpath = fs::path(connstr);
     if(overwrite_file_) {
-      if(fs::exists(fpath))
-        fs::remove(fpath);
+      if(fs::exists(fpath)) {
+        try {
+          fs::remove_all(fpath);
+        } catch (const std::exception& e) {
+          throw(gfIOError(e.what()));
+        }
+      }
     }
     if (create_directories_) {
       if(!fs::create_directories(fpath.parent_path()))
@@ -123,11 +128,15 @@ void OGRWriterNode::process()
     throw(gfException("Starting database transaction failed.\n"));
   }
 
+  std::cout << "Using driver " << dataSource->GetDriverName() <<std::endl;
+
   OGRwkbGeometryType wkbType;
   if (geom_term.is_connected_type(typeid(LinearRing))) {
     wkbType = wkbPolygon;
   } else if (geom_term.is_connected_type(typeid(LineString))) {
     wkbType = wkbLineString25D;
+  } else if (geom_term.is_connected_type(typeid(Mesh))) {
+    wkbType = wkbMultiPolygon25D;
   } else if (geom_term.is_connected_type(typeid(std::vector<TriangleCollection>)) || geom_term.is_connected_type(typeid(MultiTriangleCollection))) {
     // Note that in case of a MultiTriangleCollection we actually write the
     // TriangleCollections separately, and not the whole MultiTriangleCollection
@@ -143,12 +152,18 @@ void OGRWriterNode::process()
   
   OGRLayer* layer = nullptr;
   char** lco = nullptr;
-  if (overwrite_layer_) {
+
+  if (gdaldriver == "FileGDB") {
+    lco = CSLSetNameValue(lco, "CREATE_MULTIPATCH", "YES");
+  } 
+  if (overwrite_layer_) { // FileGDB does not support OVERWRITE, and falls back to OpenFileGDB (no multipatch support) when appending
     lco = CSLSetNameValue(lco, "OVERWRITE", "YES");
   } else {
     lco = CSLSetNameValue(lco, "OVERWRITE", "NO");
     layer = dataSource->GetLayerByName(find_and_replace(layername, "-", "_").c_str());
   }
+
+  bool supports_list_attributes = gdaldriver != "ESRI Shapefile" && gdaldriver != "FileGDB";
 
   auto geom_size = geom_term.size();
   std::cout << "creating " << geom_size << " geometry features\n";
@@ -235,9 +250,11 @@ void OGRWriterNode::process()
       //     attr_id_map[k] = fcnt++;
       //   }
       // }
-      const std::string labels = "labels";
-      create_field(layer, labels, OFTIntegerList);
-      attr_id_map[labels] = fcnt++;
+      if(supports_list_attributes) {
+        const std::string labels = "labels";
+        create_field(layer, labels, OFTIntegerList);
+        attr_id_map[labels] = fcnt++;
+      }
 
       // TODO: Don't hardcode building_part_id for these geometry types.
       //  Would be better get all attributes from the attribute terminal.
@@ -275,7 +292,7 @@ void OGRWriterNode::process()
     if (geom_term.is_connected_type(typeid(MultiTriangleCollection)) || geom_term.is_connected_type(typeid(std::unordered_map<int, Mesh>))) {
       for (int i = 0; i < fcnt; i++) {
         auto fdef = layer->GetLayerDefn()->GetFieldDefn(i);
-        if (strcmp(fdef->GetNameRef(), "labels") == 0) {
+        if (strcmp(fdef->GetNameRef(), "labels") == 0 && supports_list_attributes) {
           attr_id_map["labels"] = i;
         } else if (strcmp(fdef->GetNameRef(), "building_part_id") == 0) {
           attr_id_map["building_part_id"] = i;
@@ -478,10 +495,12 @@ void OGRWriterNode::process()
             }
           }
 
-          size_t label_size = mesh.get_labels().size();
-          std::vector<int> val(label_size);
-          val = mesh.get_labels();
-          poFeature_->SetField(attr_id_map["labels"], label_size, val.data());
+          if(supports_list_attributes) {
+            size_t label_size = mesh.get_labels().size();
+            std::vector<int> val(label_size);
+            val = mesh.get_labels();
+            poFeature_->SetField(attr_id_map["labels"], label_size, val.data());
+          }
 
           auto bp_id = std::to_string(mid);
           poFeature_->SetField(attr_id_map["building_part_id"], bp_id.c_str());
