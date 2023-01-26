@@ -88,7 +88,7 @@ void OGRLoaderNode::read_polygon(OGRPolygon* poPolygon) {
     std::array<float, 3> p = manager.coord_transform_fwd(
         poPoint.getX(),
         poPoint.getY(),
-        poPoint.getZ() + base_elevation
+        base_elevation==0 ? poPoint.getZ() : base_elevation
       );
     gf_polygon.push_back(p);
   }
@@ -107,7 +107,7 @@ void OGRLoaderNode::read_polygon(OGRPolygon* poPolygon) {
       std::array<float, 3> p = manager.coord_transform_fwd(
         poPoint.getX(),
         poPoint.getY(),
-        poPoint.getZ() + base_elevation
+        base_elevation==0 ? poPoint.getZ() : base_elevation
       );
       gf_iring.push_back(p);
     }
@@ -248,10 +248,10 @@ void OGRLoaderNode::process()
         for (auto &poPoint : poLineString)
         {
           std::array<float, 3> p = manager.coord_transform_fwd(
-              poPoint.getX(),
-              poPoint.getY(),
-              poPoint.getZ() + base_elevation
-            );
+            poPoint.getX(),
+            poPoint.getY(),
+            base_elevation==0 ? poPoint.getZ() : base_elevation
+          );
           line_string.push_back(p);
         }
         line_strings.push_back(line_string);

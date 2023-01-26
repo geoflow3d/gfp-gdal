@@ -51,7 +51,7 @@ public:
 
     add_param(ParamPath(filepath, "filepath", "File path"));
     add_param(ParamBool(output_fid_, "output_fid", "Output attribute named 'OGR_FID' containing the OGR feature ID's"));
-    add_param(ParamFloat(base_elevation, "base_elevation", "Base elevation"));
+    add_param(ParamFloat(base_elevation, "base_elevation", "Force the Z elevation to be this value. Ignored if set to 0."));
     add_param(ParamString(layer_name_, "layer_name", "Layer name (takes precedence over layer ID)"));
     add_param(ParamInt(layer_id, "layer_id", "Layer ID"));
     add_param(ParamString(attribute_filter_, "attribute_filter", "Load only features that satisfy this condition"));
