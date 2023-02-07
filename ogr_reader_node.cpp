@@ -204,7 +204,7 @@ void OGRLoaderNode::process()
   if(output_fid_)
     auto &ogrfid_term = poly_output("attributes").add_vector("OGR_FID", typeid(int));
 
-  // bool found_offset = manager.data_offset.has_value();
+  // bool found_offset = manager.data_offset().has_value();
   poLayer->ResetReading();
 
   

@@ -54,7 +54,7 @@ void CSVSegmentLoaderNode::process()
 {
   // SegmentCollection isegments;
   std::unordered_map<std::string, SegmentCollection> segments_by_bid;
-  bool found_offset = manager.data_offset.has_value();
+  bool found_offset = manager.data_offset().has_value();
   for (auto filepath : split_string(manager.substitute_globals(filepaths), " ")) {
     std::ifstream f_in(filepath);
     float px, py, pz;
@@ -119,13 +119,13 @@ void CSVSegmentLoaderNode::process()
       }
       if(!found_offset) {
         found_offset = true;
-        (*manager.data_offset)[0] = xs;
-        (*manager.data_offset)[1] = ys;
-        (*manager.data_offset)[2] = zs;
+        (*manager.data_offset())[0] = xs;
+        (*manager.data_offset())[1] = ys;
+        (*manager.data_offset())[2] = zs;
       }
       segments->push_back({
-        arr3f({xs - float((*manager.data_offset)[0]), ys - float((*manager.data_offset)[1]), zs - float((*manager.data_offset)[2])}),
-        arr3f({xe - float((*manager.data_offset)[0]), ye - float((*manager.data_offset)[1]), ze - float((*manager.data_offset)[2])})
+        arr3f({xs - float((*manager.data_offset())[0]), ys - float((*manager.data_offset())[1]), zs - float((*manager.data_offset())[2])}),
+        arr3f({xe - float((*manager.data_offset())[0]), ye - float((*manager.data_offset())[1]), ze - float((*manager.data_offset())[2])})
       });
       // eat up \n so that we reach eof after reading last line
       // f_in.get();
@@ -197,9 +197,9 @@ void CSVWriterNode::process()
       for (size_t i = 0; i < points.size(); ++i)
       {
         f_out
-            << points[i][0] + (*manager.data_offset)[0] << separator
-            << points[i][1] + (*manager.data_offset)[1] << separator
-            << points[i][2] + (*manager.data_offset)[2] << separator;
+            << points[i][0] + (*manager.data_offset())[0] << separator
+            << points[i][1] + (*manager.data_offset())[1] << separator
+            << points[i][2] + (*manager.data_offset())[2] << separator;
         print_collection_attributes(f_out, avm, i);
         if (require_attributes_) print_attributes(f_out, n);
         f_out << "\n";
@@ -213,12 +213,12 @@ void CSVWriterNode::process()
       for (size_t i = 0; i < segments.size(); ++i)
       {
         f_out
-            << segments[i][0][0] + (*manager.data_offset)[0] << separator
-            << segments[i][0][1] + (*manager.data_offset)[1] << separator
-            << segments[i][0][2] + (*manager.data_offset)[2] << separator
-            << segments[i][1][0] + (*manager.data_offset)[0] << separator
-            << segments[i][1][1] + (*manager.data_offset)[1] << separator
-            << segments[i][1][2] + (*manager.data_offset)[2] << separator;
+            << segments[i][0][0] + (*manager.data_offset())[0] << separator
+            << segments[i][0][1] + (*manager.data_offset())[1] << separator
+            << segments[i][0][2] + (*manager.data_offset())[2] << separator
+            << segments[i][1][0] + (*manager.data_offset())[0] << separator
+            << segments[i][1][1] + (*manager.data_offset())[1] << separator
+            << segments[i][1][2] + (*manager.data_offset())[2] << separator;
         print_collection_attributes(f_out, avm, i);
         if (require_attributes_) print_attributes(f_out, n);
         f_out << "\n";
@@ -304,7 +304,7 @@ void GDALWriterNode::process() {
   auto& image = images.sub_terminals()[0]->get<geoflow::Image>();
   poDstDS = poDriver->Create( file_path.c_str(), image.dim_x, image.dim_y, images.sub_terminals().size(), dataType,
                               papszOptions );
-  double adfGeoTransform[6] = { image.min_x + (*manager.data_offset)[0], image.cellsize, 0, image.min_y + (*manager.data_offset)[1], 0, image.cellsize };
+  double adfGeoTransform[6] = { image.min_x + (*manager.data_offset())[0], image.cellsize, 0, image.min_y + (*manager.data_offset())[1], 0, image.cellsize };
   
   auto no_data_val = image.nodataval;
   
@@ -409,9 +409,9 @@ void GDALReaderNode::process() {
   for (size_t i=0; i<nXSize; ++i) {
     for (size_t j=0; j<nYSize; ++j) {
       pointcloud.push_back( {
-        float(adfGeoTransform[0] + adfGeoTransform[1] * i - (*manager.data_offset)[0]),
-        float(adfGeoTransform[3] + adfGeoTransform[5] * j - (*manager.data_offset)[1]),
-        pafImageData[i + j*nXSize] - float((*manager.data_offset)[2])
+        float(adfGeoTransform[0] + adfGeoTransform[1] * i - (*manager.data_offset())[0]),
+        float(adfGeoTransform[3] + adfGeoTransform[5] * j - (*manager.data_offset())[1]),
+        pafImageData[i + j*nXSize] - float((*manager.data_offset())[2])
       } );
     }
   }
