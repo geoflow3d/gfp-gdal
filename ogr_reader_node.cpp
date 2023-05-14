@@ -235,7 +235,9 @@ void OGRLoaderNode::process()
 
     // read feature geometry
     OGRGeometry *poGeometry;
+    
     poGeometry = poFeature->GetGeometryRef();
+    output("wkt").push_back(poGeometry->exportToWkt());
     // std::cout << "Layer geometry type: " << poGeometry->getGeometryType() << " , " << geometry_type << "\n";
     if (poGeometry != nullptr) // FIXME: we should check if te layer geometrytype matches with this feature's geometry type. Messy because they can be a bit different eg. wkbLineStringZM and wkbLineString25D
     {

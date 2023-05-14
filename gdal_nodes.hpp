@@ -43,6 +43,7 @@ public:
   {
     add_vector_output("line_strings", typeid(LineString));
     add_vector_output("linear_rings", typeid(LinearRing));
+    add_vector_output("wkt", typeid(std::string));
 
     add_vector_output("area", typeid(float));
     add_vector_output("is_valid", typeid(bool));
