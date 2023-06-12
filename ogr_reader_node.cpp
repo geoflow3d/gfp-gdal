@@ -31,6 +31,11 @@ void OGRLoaderNode::push_attributes(const OGRFeature &poFeature, std::unordered_
 {
   for (auto &[name, mterm] : poly_output("attributes").sub_terminals())
   {
+    //first check for null values
+    if(poFeature.IsFieldNull(fieldNameMap[name])) {
+      mterm->push_back_any(std::any());
+      continue;
+    }
     if (mterm->accepts_type(typeid(bool)))
     {
       mterm->push_back(bool(poFeature.GetFieldAsInteger(name.c_str())));
