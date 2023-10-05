@@ -479,6 +479,14 @@ void OGRWriterNode::process()
             printf("couldn't add polygon to MultiPolygon");
           }
         }
+
+        if(supports_list_attributes) {
+          size_t label_size = mesh.get_labels().size();
+          std::vector<int> val(label_size);
+          val = mesh.get_labels();
+          poFeature->SetField(attr_id_map["labels"], label_size, val.data());
+        }
+
         poFeature->SetGeometry(&ogrmultipoly);
         poFeatures.push_back(poFeature);
       } else if (geom_term.is_connected_type(typeid(std::unordered_map<int, Mesh>))) {
