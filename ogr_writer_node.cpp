@@ -220,7 +220,13 @@ void OGRWriterNode::process()
         attr_id_map[term->get_full_name()] = fcnt++;
       }
     }
-    if (geom_term.is_connected_type(typeid(MultiTriangleCollection)) || geom_term.is_connected_type(typeid(std::unordered_map<int, Mesh>))) {
+    if (geom_term.is_connected_type(typeid(Mesh))) {
+      if(supports_list_attributes) {
+        const std::string labels = "labels";
+        create_field(layer, labels, OFTIntegerList);
+        attr_id_map[labels] = fcnt++;
+      }
+    } else if (geom_term.is_connected_type(typeid(MultiTriangleCollection)) || geom_term.is_connected_type(typeid(std::unordered_map<int, Mesh>))) {
       // TODO: Ideally we would handle the attributes of all geometry types the same way and wouldn't need to do cases like this one.
       // A MultiTriangleCollection stores the attributes with itself
       // if (geom_term.has_data()) 
