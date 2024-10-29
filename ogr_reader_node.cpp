@@ -218,10 +218,12 @@ void OGRLoaderNode::process()
 
   char *pszWKT = NULL;
   OGRSpatialReference* layerSRS = poLayer->GetSpatialRef();
-  layerSRS->exportToWkt( &pszWKT );
-  // printf( "Layer SRS: \n %s\n", pszWKT );
-  manager.set_fwd_crs_transform(pszWKT);
-  CPLFree(pszWKT);
+  if (layerSRS) {
+    layerSRS->exportToWkt( &pszWKT );
+    // printf( "Layer SRS: \n %s\n", pszWKT );
+    manager.set_fwd_crs_transform(pszWKT);
+    CPLFree(pszWKT);
+  }
 
   if (attribute_filter_.size()) {
     auto attribute_filter = manager.substitute_globals(attribute_filter_);
@@ -305,6 +307,10 @@ void OGRLoaderNode::process()
   {
     // output("linear_rings").set(linear_rings);
     std::cout << "pushed " << linear_rings.size() << " linear_ring features...\n";
+  }
+
+  if (layerSRS) {
+    manager.clear_fwd_crs_transform();
   }
 }
 
